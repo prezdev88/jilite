@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import KanbanBoard from './kanban-board';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
