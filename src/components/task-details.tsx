@@ -3,7 +3,11 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
 import type { Label } from '@prisma/client';
 import { Pencil, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+
+const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
+const MDPreview = dynamic(() => import('@uiw/react-md-editor').then((mod) => mod.default.Markdown), { ssr: false });
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
@@ -128,7 +132,11 @@ export function TaskDetails({ task, availableLabels, onSaved, onLabelCreated, on
         {task.labels.length ? <TaskLabels labels={task.labels} className="task-detail-labels" /> : <p className="task-detail-empty">Sin etiquetas.</p>}
         <div className="task-description">
           <h2>Descripción</h2>
-          <p>{task.detail || 'Sin descripción.'}</p>
+          {task.detail ? (
+            <div data-color-mode="dark" style={{ background: 'transparent' }}>
+              <MDPreview source={task.detail} style={{ background: 'transparent' }} />
+            </div>
+          ) : <p>{'Sin descripción.'}</p>}
         </div>
       </div>
     );
@@ -137,7 +145,10 @@ export function TaskDetails({ task, availableLabels, onSaved, onLabelCreated, on
   return (
     <form className="task-edit-form" onSubmit={save}>
       <div className="form-field"><label htmlFor={`title-${task.id}`}>Título</label><Input id={`title-${task.id}`} autoFocus value={title} onChange={event => setTitle(event.target.value)} required disabled={pending || creatingLabel || disabled} /></div>
-      <div className="form-field"><label htmlFor={`detail-${task.id}`}>Descripción</label><Textarea id={`detail-${task.id}`} value={detail} onChange={event => setDetail(event.target.value)} rows={7} disabled={pending || creatingLabel || disabled} /></div>
+      <div className="form-field" data-color-mode="dark">
+        <label>Descripción</label>
+        <MDEditor value={detail} onChange={val => setDetail(val || '')} textareaProps={{ placeholder: 'Añade un poco de contexto...' }} preview="edit" height={250} />
+      </div>
       <fieldset className="label-editor">
         <legend>Etiquetas</legend>
         {labels.length ? (
