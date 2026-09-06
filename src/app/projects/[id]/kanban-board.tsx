@@ -3,7 +3,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import type { Column, Label, Project } from '@prisma/client';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TaskDetails } from '@/components/task-details';
@@ -217,13 +217,22 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
                         {visibleTasks.map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={hasActiveFilters || pending}>
                             {(provided, snapshot) => (
-                              <article ref={provided.innerRef} {...provided.draggableProps} className={'task-card' + (snapshot.isDragging ? ' is-dragging' : '')}>
+                              <article
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={'task-card' + (snapshot.isDragging ? ' is-dragging' : '')}
+                                onClick={(e) => {
+                                  if ((e.target as HTMLElement).closest('a')) return;
+                                  setError('');
+                                  setSelectedTask(task);
+                                }}
+                              >
                                 <div className="task-card-copy">
                                   <Link className="entity-code task-code" href={`/tasks/${project.code}-${task.number}`}>{project.code}-{task.number}</Link>
-                                  <button className="task-open" onClick={() => { setError(''); setSelectedTask(task); }}><h3>{task.title}</h3></button>
+                                  <div className="task-open"><h3>{task.title}</h3></div>
                                   <TaskLabels labels={task.labels} className="task-card-labels" />
                                 </div>
-                                <span {...provided.dragHandleProps} className="task-grip" aria-label={'Mover tarea: ' + task.title}><GripVertical size={16} /></span>
                               </article>
                             )}
                           </Draggable>
