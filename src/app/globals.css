@@ -135,9 +135,10 @@
   .count-badge { font-size: 11px; color: #83838e; font-variant-numeric: tabular-nums; }
   .task-dropzone { min-height: 48px; border-radius: 7px; transition: background .15s; }
   .dragging-over { background: #24242c; outline: 1px dashed #575763; }
-  .task-card { display: flex; align-items: flex-start; gap: 8px; padding: 16px 11px 16px 16px; margin-bottom: 9px; background: #1b1b20; border: 1px solid #2e2e35; border-radius: 7px; transition: border-color .15s; }
+  .task-card-wrapper { display: block; margin-bottom: 9px; }
+  .task-card { display: flex; align-items: flex-start; gap: 8px; padding: 16px 11px 16px 16px; background: #1b1b20; border: 1px solid #2e2e35; border-radius: 7px; transition: border-color .15s, transform .2s ease; }
   .task-card:hover, .task-card:focus-within { border-color: #494952; }
-  .task-card.is-dragging { border-color: #777783; box-shadow: 0 12px 30px #0006; }
+  .task-card.is-dragging { border-color: #777783; box-shadow: 0 12px 30px #0006; transform: rotate(3deg) scale(1.02); z-index: 10; }
   .task-open { display: block; text-align: left; flex: 1; min-width: 0; }
   .task-open h3 { font-size: 13px; font-weight: 450; line-height: 1.6; overflow-wrap: anywhere; }
   .task-labels { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }

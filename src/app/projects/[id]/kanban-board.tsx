@@ -221,17 +221,26 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={'task-card' + (snapshot.isDragging ? ' is-dragging' : '')}
-                                onClick={(e) => {
-                                  if ((e.target as HTMLElement).closest('a')) return;
-                                  setError('');
-                                  setSelectedTask(task);
-                                }}
+                                className="task-card-wrapper"
+                                style={
+                                  snapshot.isDropAnimating && provided.draggableProps.style
+                                    ? { ...provided.draggableProps.style, transitionDuration: '0.05s' }
+                                    : provided.draggableProps.style
+                                }
                               >
-                                <div className="task-card-copy">
-                                  <Link className="entity-code task-code" href={`/tasks/${project.code}-${task.number}`}>{project.code}-{task.number}</Link>
-                                  <div className="task-open"><h3>{task.title}</h3></div>
-                                  <TaskLabels labels={task.labels} className="task-card-labels" />
+                                <div
+                                  className={'task-card' + (snapshot.isDragging ? ' is-dragging' : '')}
+                                  onClick={(e) => {
+                                    if ((e.target as HTMLElement).closest('a')) return;
+                                    setError('');
+                                    setSelectedTask(task);
+                                  }}
+                                >
+                                  <div className="task-card-copy">
+                                    <Link className="entity-code task-code" href={`/tasks/${project.code}-${task.number}`}>{project.code}-{task.number}</Link>
+                                    <div className="task-open"><h3>{task.title}</h3></div>
+                                    <TaskLabels labels={task.labels} className="task-card-labels" />
+                                  </div>
                                 </div>
                               </article>
                             )}
