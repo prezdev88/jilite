@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  jilite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - jilite_db:/app/prisma
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+
+volumes:
+  jilite_db:
