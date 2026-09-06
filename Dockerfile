@@ -26,7 +26,9 @@ RUN adduser --system --uid 1001 nextjs
 RUN mkdir -p public
 
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder /app/prisma/schema.prisma ./schema.prisma
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -39,4 +41,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD npx prisma db push && node server.js
+CMD cp schema.prisma prisma/schema.prisma && node scripts/backfill-project-codes.cjs && npx prisma db push --skip-generate && node server.js

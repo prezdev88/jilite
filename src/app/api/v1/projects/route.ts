@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export async function GET() {
   const projects = await prisma.project.findMany({
@@ -9,19 +10,50 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { name, description } = await req.json();
-  const project = await prisma.project.create({
-    data: {
-      name,
-      description,
-      columns: {
-        create: [
-          { name: 'Por hacer', order: 0 },
-          { name: 'En curso', order: 1 },
-          { name: 'Terminado', order: 2 }
-        ]
+  const body = await req.json().catch(() => null);
+  const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  const code = typeof body?.code === 'string' ? body.code.trim().toUpperCase() : '';
+  const description = typeof body?.description === 'string' ? body.description.trim() : null;
+  if (!name || name.length > 120 || !/^[A-Z]{3}$/.test(code)) {
+    return NextResponse.json({ error: 'Introduce un nombre y un código de tres letras (A–Z).' }, { status: 400 });
+  }
+  try {
+    const project = await prisma.project.create({
+      data: {
+        name,
+        code,
+        description,
+        columns: {
+          create: [
+            { name: 'Por hacer', order: 0 },
+            { name: 'En curso', order: 1 },
+            { name: 'Terminado', order: 2 }
+          ]
+        }
       }
+    });
+    return NextResponse.json(project, { status: 201 });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'Ese código ya pertenece a otro proyecto.' }, { status: 409 });
     }
-  });
-  return NextResponse.json(project);
+    throw error;
+  }
+}
+
+export async function PATCH(req: Request) {
+  const body = await req.json().catch(() => null);
+  const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  if (typeof body?.id !== 'string' || !name || name.length > 120) {
+    return NextResponse.json({ error: 'Introduce un nombre de entre 1 y 120 caracteres.' }, { status: 400 });
+  }
+  try {
+    const project = await prisma.project.update({ where: { id: body.id }, data: { name } });
+    return NextResponse.json(project);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return NextResponse.json({ error: 'El proyecto ya no existe.' }, { status: 404 });
+    }
+    throw error;
+  }
 }

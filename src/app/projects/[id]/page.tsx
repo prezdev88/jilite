@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import KanbanBoard from './kanban-board';
 import { notFound } from 'next/navigation';
 
-import Link from 'next/link';
+import { WorkspaceShell } from '@/components/workspace-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,17 +17,11 @@ export default async function ProjectPage({ params }: { params: { id: string } }
 
   if (!project) return notFound();
 
+  const projects = await prisma.project.findMany({ select: { id: true, name: true, code: true } });
+
   return (
-    <main className="p-8 h-screen flex flex-col">
-      <div className="flex items-center justify-between mb-8 flex-none">
-        <div>
-          <Link href="/" className="text-sm text-muted-foreground hover:underline mb-2 inline-block">&larr; Volver</Link>
-          <h1 className="text-3xl font-bold">{project.name}</h1>
-        </div>
-      </div>
-      <div className="flex-1 min-h-0">
-        <KanbanBoard project={project} />
-      </div>
-    </main>
+    <WorkspaceShell projects={projects} activeProject={project}>
+      <KanbanBoard project={project} />
+    </WorkspaceShell>
   );
 }

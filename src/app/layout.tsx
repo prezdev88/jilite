@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const geist = localFont({ src: './fonts/GeistVF.woff', variable: '--font-sans', display: 'swap' });
 
 export const metadata: Metadata = {
   title: "Jilite",
-  description: "Agile Project Management",
+  description: "Un espacio para tus proyectos, ideas y próximos pasos.",
 };
 
 export default function RootLayout({
@@ -16,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={cn("font-sans", inter.variable)}>
-      <body className="antialiased dark:bg-slate-950">
+    <html lang="es" className={cn("dark font-sans", geist.variable)}>
+      <body className="antialiased">
         {children}
       </body>
     </html>

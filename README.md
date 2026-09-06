@@ -2,6 +2,15 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Before starting an existing installation, run `npm run db:upgrade`. This backs up
+the SQLite database to a temporary file, assigns unique three-letter codes to
+existing projects and sequential numbers to existing tasks, and updates the
+schema without resetting data. Docker runs this upgrade automatically at startup.
+
+New projects require a unique three-letter code (A–Z). Task identifiers use that
+code and a permanent sequence number, such as `NPR-1`. Renaming a project does not
+change its code; deleting a task does not reuse its number.
+
 First, run the development server:
 
 ```bash
