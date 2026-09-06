@@ -291,7 +291,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
             setSelectedTask(updated);
           }} />}
           {error && <p role="alert" className="error-message">{error}</p>}
-          <DialogFooter className="sm:justify-between"><Button variant="destructive" disabled={pending} onClick={() => setIsConfirmingDelete(true)}><Trash2 size={15} /> Eliminar tarea</Button><Button variant="outline" disabled={pending} onClick={() => setSelectedTask(null)}>Cerrar</Button></DialogFooter>
+          <DialogFooter className="sm:justify-between"><Button variant="destructive" disabled={pending} onClick={() => setIsConfirmingDelete(true)}><Trash2 size={15} /> Eliminar tarea</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={isConfirmingDelete} onOpenChange={open => { if (!pending) setIsConfirmingDelete(open); }}>
