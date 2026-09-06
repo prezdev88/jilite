@@ -4,7 +4,10 @@ import { Prisma } from '@prisma/client';
 
 export async function GET() {
   const projects = await prisma.project.findMany({
-    include: { columns: { orderBy: { order: 'asc' } } }
+    include: {
+      columns: { orderBy: { order: 'asc' } },
+      labels: { orderBy: { name: 'asc' } },
+    }
   });
   return NextResponse.json(projects);
 }

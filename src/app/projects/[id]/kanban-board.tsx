@@ -1,32 +1,36 @@
 'use client';
 
 import { useState, useEffect, type FormEvent } from 'react';
-import type { Column, Project, Task } from '@prisma/client';
+import type { Column, Label, Project } from '@prisma/client';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { GripVertical, Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TaskDetails } from '@/components/task-details';
+import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
 import { ColumnStatus } from '@/components/column-status';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import type { TaskWithLabels } from '@/lib/task-types';
 
-type BoardProject = Project & { columns: Column[]; tasks: Task[] };
+type BoardProject = Project & { columns: Column[]; labels: Label[]; tasks: TaskWithLabels[] };
 
 export default function KanbanBoard({ project }: { project: BoardProject }) {
   const router = useRouter();
   const [columns, setColumns] = useState(project.columns);
+  const [labels, setLabels] = useState(project.labels);
   const [tasks, setTasks] = useState(project.tasks);
   const [isMounted, setIsMounted] = useState(false);
   const [query, setQuery] = useState('');
+  const [activeLabelIds, setActiveLabelIds] = useState<string[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDetail, setNewTaskDetail] = useState('');
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   const [newColumnName, setNewColumnName] = useState('');
   const [isAddingColumn, setIsAddingColumn] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskWithLabels | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -34,7 +38,26 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
   const [renameError, setRenameError] = useState('');
 
   useEffect(() => { setIsMounted(true); }, []);
-  useEffect(() => { setTasks(project.tasks); setColumns(project.columns); }, [project.tasks, project.columns]);
+  useEffect(() => {
+    setTasks(project.tasks);
+    setColumns(project.columns);
+    setLabels(project.labels);
+  }, [project.tasks, project.columns, project.labels]);
+
+  const hasActiveFilters = !!query || activeLabelIds.length > 0;
+
+  function matchesFilters(task: TaskWithLabels) {
+    const matchesQuery = `${project.code}-${task.number} ${task.title}`.toLocaleLowerCase('es')
+      .includes(query.toLocaleLowerCase('es'));
+    const matchesLabels = activeLabelIds.every(labelId => task.labels.some(label => label.id === labelId));
+    return matchesQuery && matchesLabels;
+  }
+
+  function toggleLabelFilter(labelId: string) {
+    setActiveLabelIds(current => current.includes(labelId)
+      ? current.filter(id => id !== labelId)
+      : [...current, labelId]);
+  }
 
   async function renameProject(event: FormEvent) {
     event.preventDefault();
@@ -67,7 +90,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
   }
 
   async function onDragEnd({ source, destination, draggableId }: DropResult) {
-    if (!destination || pending || query) return;
+    if (!destination || pending || hasActiveFilters) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
     const previousTasks = tasks;
     const movedTask = tasks.find(task => task.id === draggableId);
@@ -92,7 +115,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
     setPending(true);
     setError('');
     try {
-      const task: Task = await request('/api/v1/tasks', 'POST', { title: newTaskTitle.trim(), detail: newTaskDetail.trim(), projectId: project.id, columnId });
+      const task: TaskWithLabels = await request('/api/v1/tasks', 'POST', { title: newTaskTitle.trim(), detail: newTaskDetail.trim(), projectId: project.id, columnId });
       setTasks(current => [...current, task]);
       setNewTaskTitle('');
       setNewTaskDetail('');
@@ -134,7 +157,10 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
     setNewTaskDetail('');
     setError('');
     setQuery('');
+    setActiveLabelIds([]);
   }
+
+  const visibleTaskCount = tasks.filter(matchesFilters).length;
 
   return (
     <>
@@ -147,30 +173,55 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
         <Button disabled={pending} onClick={() => columns.length ? openTaskForm(columns[0].id) : setIsAddingColumn(true)}><Plus size={16} /> {columns.length ? 'Nueva tarea' : 'Nueva lista'}</Button>
       </div>
       <div className="board-toolbar">
-        <span className="board-summary">{tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}</span>
+        <span className="board-summary">{hasActiveFilters ? `${visibleTaskCount} de ` : ''}{tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}</span>
         <div className="search-field"><Search size={16} /><input aria-label="Buscar tareas" placeholder="Buscar tareas…" value={query} onChange={event => setQuery(event.target.value)} />{query && <button aria-label="Limpiar búsqueda" onClick={() => setQuery('')}><X size={14} /></button>}</div>
       </div>
+      {labels.length > 0 && (
+        <div className="label-filter-bar">
+          <span className="label-filter-title"><Tag size={14} /> Filtrar por etiquetas</span>
+          <div className="label-filter-options">
+            {labels.map(label => {
+              const active = activeLabelIds.includes(label.id);
+              return (
+                <button
+                  className={`label-filter${active ? ' active' : ''}`}
+                  style={taskLabelStyle(label.color)}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggleLabelFilter(label.id)}
+                  key={label.id}
+                >
+                  <span className="task-label-dot" aria-hidden="true" />
+                  {label.name}
+                </button>
+              );
+            })}
+          </div>
+          {activeLabelIds.length > 0 && <button className="clear-label-filters" type="button" onClick={() => setActiveLabelIds([])}><X size={13} /> Limpiar</button>}
+        </div>
+      )}
       {error && !selectedTask && <p role="alert" className="error-message">{error}</p>}
-      {query && <p className="board-hint">Limpia la búsqueda para volver a mover las tarjetas.</p>}
+      {hasActiveFilters && <p className="board-hint">Se muestran las tareas que coinciden con todos los filtros. Límpialos para volver a mover las tarjetas.</p>}
       {!isMounted ? <div className="board-loading" role="status">Preparando tu tablero…</div> : (
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="kanban-scroll">
             {columns.map((column) => {
               const columnTasks = tasks.filter(task => task.columnId === column.id);
-              const visibleTasks = columnTasks.filter(task => `${project.code}-${task.number} ${task.title}`.toLocaleLowerCase('es').includes(query.toLocaleLowerCase('es')));
+              const visibleTasks = columnTasks.filter(matchesFilters);
               return (
                 <section key={column.id} className="kanban-column" aria-label={column.name}>
-                  <div className="column-heading"><h2><ColumnStatus column={column} /></h2><span className="count-badge">{query ? visibleTasks.length + '/' : ''}{columnTasks.length}</span></div>
-                  <Droppable droppableId={column.id} isDropDisabled={!!query || pending}>
+                  <div className="column-heading"><h2><ColumnStatus column={column} /></h2><span className="count-badge">{hasActiveFilters ? visibleTasks.length + '/' : ''}{columnTasks.length}</span></div>
+                  <Droppable droppableId={column.id} isDropDisabled={hasActiveFilters || pending}>
                     {(provided, snapshot) => (
                       <div {...provided.droppableProps} ref={provided.innerRef} className={'task-dropzone' + (snapshot.isDraggingOver ? ' dragging-over' : '')}>
                         {visibleTasks.map((task, index) => (
-                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!!query || pending}>
+                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={hasActiveFilters || pending}>
                             {(provided, snapshot) => (
                               <article ref={provided.innerRef} {...provided.draggableProps} className={'task-card' + (snapshot.isDragging ? ' is-dragging' : '')}>
                                 <div className="task-card-copy">
                                   <Link className="entity-code task-code" href={`/tasks/${project.code}-${task.number}`}>{project.code}-{task.number}</Link>
                                   <button className="task-open" onClick={() => { setError(''); setSelectedTask(task); }}><h3>{task.title}</h3></button>
+                                  <TaskLabels labels={task.labels} className="task-card-labels" />
                                 </div>
                                 <span {...provided.dragHandleProps} className="task-grip" aria-label={'Mover tarea: ' + task.title}><GripVertical size={16} /></span>
                               </article>
@@ -178,7 +229,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
                           </Draggable>
                         ))}
                         {provided.placeholder}
-                        {!visibleTasks.length && !snapshot.isDraggingOver && <div className="column-empty">{query ? 'Sin coincidencias' : 'Sin tareas'}</div>}
+                        {!visibleTasks.length && !snapshot.isDraggingOver && <div className="column-empty">{hasActiveFilters ? 'Sin coincidencias' : 'Sin tareas'}</div>}
                       </div>
                     )}
                   </Droppable>
@@ -202,7 +253,11 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
       <Dialog open={!!selectedTask} onOpenChange={open => { if (!open && !pending) setSelectedTask(null); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogDescription><Link className="entity-code" href={`/tasks/${project.code}-${selectedTask?.number}`}>{project.code}-{selectedTask?.number}</Link> · <ColumnStatus column={columns.find(column => column.id === selectedTask?.columnId)} /></DialogDescription><DialogTitle>{selectedTask?.title}</DialogTitle></DialogHeader>
-          {selectedTask && <TaskDetails key={selectedTask.id} task={selectedTask} disabled={pending} onBusyChange={setPending} onSaved={updated => {
+          {selectedTask && <TaskDetails key={selectedTask.id} task={selectedTask} availableLabels={labels} disabled={pending} onBusyChange={setPending} onLabelCreated={label => {
+            setLabels(current => current.some(item => item.id === label.id)
+              ? current
+              : [...current, label].sort((first, second) => first.name.localeCompare(second.name, 'es')));
+          }} onSaved={updated => {
             setTasks(current => current.map(task => task.id === updated.id ? updated : task));
             setSelectedTask(updated);
             router.refresh();

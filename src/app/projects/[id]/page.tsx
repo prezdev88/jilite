@@ -11,7 +11,11 @@ export default async function ProjectPage({ params }: { params: { id: string } }
     where: { id: params.id },
     include: {
       columns: { orderBy: { order: 'asc' } },
-      tasks: { orderBy: { order: 'asc' } }
+      labels: { orderBy: { name: 'asc' } },
+      tasks: {
+        orderBy: { order: 'asc' },
+        include: { labels: { orderBy: { name: 'asc' } } },
+      }
     }
   });
 

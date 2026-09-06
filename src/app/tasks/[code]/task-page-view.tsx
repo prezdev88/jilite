@@ -3,16 +3,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Task, Project, Column } from '@prisma/client';
+import type { Project, Column, Label } from '@prisma/client';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { TaskDetails } from '@/components/task-details';
 import { ColumnStatus } from '@/components/column-status';
 import { Button } from '@/components/ui/button';
+import type { TaskWithLabels } from '@/lib/task-types';
 
-type TaskWithContext = Task & { project: Project; column: Column | null };
+type TaskWithContext = TaskWithLabels & { project: Project; column: Column | null };
 
-export default function TaskPageView({ task: initialTask }: { task: TaskWithContext }) {
+export default function TaskPageView({ task: initialTask, availableLabels }: { task: TaskWithContext; availableLabels: Label[] }) {
   const [task, setTask] = useState(initialTask);
+  const [labels, setLabels] = useState(availableLabels);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -41,7 +43,9 @@ export default function TaskPageView({ task: initialTask }: { task: TaskWithCont
         <div className="task-page-meta"><span className="entity-code">{task.project.code}-{task.number}</span><ColumnStatus column={task.column} /></div>
         <h1>{task.title}</h1>
       </header>
-      <TaskDetails task={task} disabled={deleting} onBusyChange={setSaving} onSaved={updated => {
+      <TaskDetails task={task} availableLabels={labels} disabled={deleting} onBusyChange={setSaving} onLabelCreated={label => {
+        setLabels(current => [...current, label].sort((first, second) => first.name.localeCompare(second.name, 'es')));
+      }} onSaved={updated => {
         setTask(current => ({ ...current, ...updated }));
         router.refresh();
       }} />

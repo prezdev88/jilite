@@ -1,0 +1,635 @@
+openapi: 3.1.0
+
+info:
+  title: Jilite Local API
+  version: 1.1.0
+  description: |
+    API HTTP de la instancia local de Jilite.
+
+    Esta API no requiere autenticación y está pensada exclusivamente para
+    clientes que se ejecutan en el mismo equipo. No debe exponerse a Internet.
+
+servers:
+  - url: http://127.0.0.1:3000
+    description: Instancia local de Jilite
+
+tags:
+  - name: Projects
+    description: Gestión de proyectos.
+  - name: Tasks
+    description: Gestión de tareas del tablero Kanban.
+  - name: Columns
+    description: Gestión de columnas del tablero Kanban.
+  - name: Labels
+    description: Gestión de etiquetas de colores para las tareas.
+
+paths:
+  /api/v1/projects:
+    get:
+      tags: [Projects]
+      operationId: listProjects
+      summary: Listar proyectos
+      description: Devuelve todos los proyectos junto con sus columnas y etiquetas ordenadas.
+      responses:
+        "200":
+          description: Lista de proyectos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectWithColumns"
+
+    post:
+      tags: [Projects]
+      operationId: createProject
+      summary: Crear un proyecto
+      description: |
+        Crea un proyecto y genera automáticamente las columnas Por hacer,
+        En curso y Terminado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+            examples:
+              project:
+                summary: Proyecto de ejemplo
+                value:
+                  name: Nuevo producto
+                  code: NPR
+                  description: Planificación del nuevo producto.
+      responses:
+        "201":
+          description: Proyecto creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          description: El nombre o el código no son válidos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: El código ya pertenece a otro proyecto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      tags: [Projects]
+      operationId: renameProject
+      summary: Cambiar el nombre de un proyecto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameProjectRequest"
+            examples:
+              rename:
+                value:
+                  id: cm123project
+                  name: Producto renovado
+      responses:
+        "200":
+          description: Proyecto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          description: El identificador o el nombre no son válidos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: El proyecto no existe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/tasks:
+    get:
+      tags: [Tasks]
+      operationId: listTasks
+      summary: Listar las tareas de un proyecto
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          description: Identificador interno del proyecto.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Tareas del proyecto ordenadas por su posición.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+        "400":
+          description: Falta el identificador del proyecto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags: [Tasks]
+      operationId: createTask
+      summary: Crear una tarea
+      description: |
+        Crea una tarea y le asigna el siguiente número permanente del proyecto.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+            examples:
+              task:
+                value:
+                  title: Preparar prototipo
+                  detail: Crear la primera versión navegable.
+                  projectId: cm123project
+                  columnId: cm123column
+      responses:
+        "201":
+          description: Tarea creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+    patch:
+      tags: [Tasks]
+      operationId: updateTask
+      summary: Editar una tarea
+      description: Actualiza el título, la descripción, las etiquetas o cualquier combinación de esos campos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+            examples:
+              update:
+                value:
+                  taskId: cm123task
+                  title: Preparar prototipo actualizado
+                  detail: Incluir la navegación principal.
+      responses:
+        "200":
+          description: Tarea actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: La solicitud no contiene campos editables válidos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: La tarea no existe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Tasks]
+      operationId: deleteTask
+      summary: Eliminar una tarea
+      parameters:
+        - name: taskId
+          in: query
+          required: true
+          description: Identificador interno de la tarea.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Tarea eliminada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteTaskResponse"
+        "400":
+          description: Falta el identificador de la tarea.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: La tarea no existe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/tasks/move:
+    post:
+      tags: [Tasks]
+      operationId: moveTask
+      summary: Mover una tarea
+      description: Cambia la columna y la posición de una tarea en el tablero.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveTaskRequest"
+            examples:
+              move:
+                value:
+                  taskId: cm123task
+                  newColumnId: cm456column
+                  newOrder: 0
+      responses:
+        "200":
+          description: Tarea movida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /api/v1/columns:
+    post:
+      tags: [Columns]
+      operationId: createColumn
+      summary: Crear una columna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateColumnRequest"
+            examples:
+              column:
+                value:
+                  name: En revisión
+                  projectId: cm123project
+                  order: 3
+      responses:
+        "200":
+          description: Columna creada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Column"
+
+  /api/v1/labels:
+    get:
+      tags: [Labels]
+      operationId: listLabels
+      summary: Listar las etiquetas de un proyecto
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          description: Identificador interno del proyecto.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Etiquetas ordenadas por nombre.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Label"
+        "400":
+          description: Falta el identificador del proyecto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags: [Labels]
+      operationId: createLabels
+      summary: Crear o reutilizar varias etiquetas
+      description: |
+        Recibe nombres de etiquetas, elimina duplicados sin distinguir
+        mayúsculas y minúsculas, reutiliza las existentes y asigna
+        automáticamente un color a cada etiqueta nueva.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLabelsRequest"
+            examples:
+              label:
+                value:
+                  names: [Urgente, Backend, Diseño]
+                  projectId: cm123project
+      responses:
+        "200":
+          description: Todas las etiquetas solicitadas ya existían.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLabelsResponse"
+        "201":
+          description: Se creó al menos una etiqueta nueva.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLabelsResponse"
+        "400":
+          description: Los nombres o el proyecto no son válidos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: El proyecto no existe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Una etiqueta fue creada concurrentemente y se debe actualizar la lista.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - code
+        - nextTaskNumber
+      properties:
+        id:
+          type: string
+          description: Identificador interno del proyecto.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        code:
+          type: string
+          description: Código permanente usado en identificadores como NPR-1.
+          pattern: "^[A-Z]{3}$"
+          examples: [NPR]
+        nextTaskNumber:
+          type: integer
+          minimum: 0
+          description: Último número asignado a una tarea del proyecto.
+        description:
+          type: [string, "null"]
+
+    ProjectWithColumns:
+      allOf:
+        - $ref: "#/components/schemas/Project"
+        - type: object
+          required: [columns, labels]
+          properties:
+            columns:
+              type: array
+              items:
+                $ref: "#/components/schemas/Column"
+            labels:
+              type: array
+              items:
+                $ref: "#/components/schemas/Label"
+
+    Column:
+      type: object
+      required:
+        - id
+        - name
+        - order
+        - projectId
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        order:
+          type: integer
+          minimum: 0
+        projectId:
+          type: string
+
+    Task:
+      type: object
+      required:
+        - id
+        - number
+        - title
+        - projectId
+        - order
+        - labels
+      properties:
+        id:
+          type: string
+          description: Identificador interno de la tarea.
+        number:
+          type: integer
+          minimum: 1
+          description: Número permanente de la tarea dentro del proyecto.
+        title:
+          type: string
+        detail:
+          type: [string, "null"]
+        projectId:
+          type: string
+        sprintId:
+          type: [string, "null"]
+        columnId:
+          type: [string, "null"]
+        order:
+          type: integer
+          minimum: 0
+        labels:
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+
+    Label:
+      type: object
+      required: [id, name, color, projectId]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          minLength: 1
+          maxLength: 40
+        color:
+          type: string
+          description: Color hexadecimal de la etiqueta.
+          pattern: "^#[0-9A-F]{6}$"
+          examples: ["#DC4C64"]
+        projectId:
+          type: string
+
+    CreateProjectRequest:
+      type: object
+      required: [name, code]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        code:
+          type: string
+          description: Tres letras; el servidor convierte el valor a mayúsculas.
+          pattern: "^[A-Za-z]{3}$"
+        description:
+          type: string
+
+    RenameProjectRequest:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+
+    CreateTaskRequest:
+      type: object
+      required: [title, projectId, columnId]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        detail:
+          type: [string, "null"]
+        projectId:
+          type: string
+          minLength: 1
+        columnId:
+          type: string
+          minLength: 1
+        sprintId:
+          type: [string, "null"]
+        labelIds:
+          type: array
+          description: Etiquetas del mismo proyecto que se asociarán a la tarea.
+          items:
+            type: string
+          uniqueItems: true
+
+    UpdateTaskRequest:
+      type: object
+      required: [taskId]
+      properties:
+        taskId:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+        detail:
+          type: [string, "null"]
+        labelIds:
+          type: array
+          description: Lista completa de etiquetas que debe conservar la tarea.
+          items:
+            type: string
+          uniqueItems: true
+      anyOf:
+        - required: [title]
+        - required: [detail]
+        - required: [labelIds]
+
+    MoveTaskRequest:
+      type: object
+      required: [taskId, newColumnId, newOrder]
+      properties:
+        taskId:
+          type: string
+          minLength: 1
+        newColumnId:
+          type: string
+          minLength: 1
+        newOrder:
+          type: integer
+          minimum: 0
+
+    CreateColumnRequest:
+      type: object
+      required: [name, projectId, order]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        projectId:
+          type: string
+          minLength: 1
+        order:
+          type: integer
+          minimum: 0
+
+    CreateLabelsRequest:
+      type: object
+      required: [names, projectId]
+      properties:
+        names:
+          type: array
+          minItems: 1
+          maxItems: 20
+          description: Nombres de etiquetas; también pueden enviarse separados por comas dentro de un elemento.
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        projectId:
+          type: string
+          minLength: 1
+
+    CreateLabelsResponse:
+      type: object
+      required: [labels, created]
+      properties:
+        labels:
+          type: array
+          description: Etiquetas solicitadas, incluyendo las que ya existían.
+          items:
+            $ref: "#/components/schemas/Label"
+        created:
+          type: integer
+          minimum: 0
+          description: Cantidad de etiquetas que fueron creadas.
+
+    DeleteTaskResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          const: true
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
