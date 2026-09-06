@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { eventEmitter } from '@/lib/events';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
   if (!task) {
     return NextResponse.json({ error: 'Todas las etiquetas deben pertenecer al proyecto.' }, { status: 400 });
   }
+  eventEmitter.emit('update');
   return NextResponse.json(task, { status: 201 });
 }
 
@@ -78,6 +80,7 @@ export async function DELETE(req: Request) {
     revalidatePath('/');
     revalidatePath(`/projects/${task.projectId}`);
     revalidatePath(`/tasks/${task.project.code}-${task.number}`);
+    eventEmitter.emit('update');
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -131,6 +134,7 @@ export async function PATCH(req: Request) {
     });
     revalidatePath(`/projects/${task.projectId}`);
     revalidatePath(`/tasks/${project.code}-${task.number}`);
+    eventEmitter.emit('update');
     return NextResponse.json(task);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {

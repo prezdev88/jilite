@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { eventEmitter } from '@/lib/events';
 
 export async function GET() {
   const projects = await prisma.project.findMany({
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
         }
       }
     });
+    eventEmitter.emit('update');
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -52,6 +54,7 @@ export async function PATCH(req: Request) {
   }
   try {
     const project = await prisma.project.update({ where: { id: body.id }, data: { name } });
+    eventEmitter.emit('update');
     return NextResponse.json(project);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {

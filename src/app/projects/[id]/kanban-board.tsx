@@ -34,6 +34,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [displayedProjectName, setDisplayedProjectName] = useState(project.name);
   const [projectName, setProjectName] = useState(project.name);
   const [renameError, setRenameError] = useState('');
 
@@ -42,7 +43,16 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
     setTasks(project.tasks);
     setColumns(project.columns);
     setLabels(project.labels);
-  }, [project.tasks, project.columns, project.labels]);
+    setDisplayedProjectName(project.name);
+  }, [project.tasks, project.columns, project.labels, project.name]);
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/v1/sync');
+    eventSource.onmessage = () => {
+      router.refresh();
+    };
+    return () => eventSource.close();
+  }, [router]);
 
   const hasActiveFilters = !!query || activeLabelIds.length > 0;
 
@@ -75,7 +85,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
         return;
       }
       setIsRenaming(false);
-      router.refresh();
+      setDisplayedProjectName(projectName.trim());
     } catch { setRenameError('No pudimos cambiar el nombre. Inténtalo de nuevo.'); }
     finally { setPending(false); }
   }
@@ -146,7 +156,6 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
       await request('/api/v1/tasks?taskId=' + selectedTask.id, 'DELETE');
       setTasks(current => current.filter(task => task.id !== selectedTask.id));
       setSelectedTask(null);
-      router.refresh();
     } catch { setError('No pudimos eliminar la tarea. Inténtalo de nuevo.'); }
     finally { setPending(false); }
   }
@@ -167,7 +176,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
       <div className="page-heading">
         <div>
           <span className="entity-code project-heading-code">{project.code}</span>
-          <div className="project-title-row"><h1>{project.name}</h1><button className="rename-project-button" aria-label="Cambiar nombre del proyecto" title="Cambiar nombre" disabled={pending} onClick={() => { setProjectName(project.name); setRenameError(''); setIsRenaming(true); }}><Pencil size={15} /></button></div>
+          <div className="project-title-row"><h1>{displayedProjectName}</h1><button className="rename-project-button" aria-label="Cambiar nombre del proyecto" title="Cambiar nombre" disabled={pending} onClick={() => { setProjectName(displayedProjectName); setRenameError(''); setIsRenaming(true); }}><Pencil size={15} /></button></div>
           {project.description && <p className="page-description">{project.description}</p>}
         </div>
         <Button disabled={pending} onClick={() => columns.length ? openTaskForm(columns[0].id) : setIsAddingColumn(true)}><Plus size={16} /> {columns.length ? 'Nueva tarea' : 'Nueva lista'}</Button>
@@ -278,7 +287,6 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
           }} onSaved={updated => {
             setTasks(current => current.map(task => task.id === updated.id ? updated : task));
             setSelectedTask(updated);
-            router.refresh();
           }} />}
           {error && <p role="alert" className="error-message">{error}</p>}
           <DialogFooter className="sm:justify-between"><Button variant="destructive" disabled={pending} onClick={handleDeleteTask}><Trash2 size={15} /> Eliminar tarea</Button><Button variant="outline" disabled={pending} onClick={() => setSelectedTask(null)}>Cerrar</Button></DialogFooter>
