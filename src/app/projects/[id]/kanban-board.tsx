@@ -34,6 +34,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [displayedProjectName, setDisplayedProjectName] = useState(project.name);
   const [projectName, setProjectName] = useState(project.name);
   const [renameError, setRenameError] = useState('');
@@ -156,6 +157,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
       await request('/api/v1/tasks?taskId=' + selectedTask.id, 'DELETE');
       setTasks(current => current.filter(task => task.id !== selectedTask.id));
       setSelectedTask(null);
+      setIsConfirmingDelete(false);
     } catch { setError('No pudimos eliminar la tarea. Inténtalo de nuevo.'); }
     finally { setPending(false); }
   }
@@ -289,7 +291,19 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
             setSelectedTask(updated);
           }} />}
           {error && <p role="alert" className="error-message">{error}</p>}
-          <DialogFooter className="sm:justify-between"><Button variant="destructive" disabled={pending} onClick={handleDeleteTask}><Trash2 size={15} /> Eliminar tarea</Button><Button variant="outline" disabled={pending} onClick={() => setSelectedTask(null)}>Cerrar</Button></DialogFooter>
+          <DialogFooter className="sm:justify-between"><Button variant="destructive" disabled={pending} onClick={() => setIsConfirmingDelete(true)}><Trash2 size={15} /> Eliminar tarea</Button><Button variant="outline" disabled={pending} onClick={() => setSelectedTask(null)}>Cerrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isConfirmingDelete} onOpenChange={open => { if (!pending) setIsConfirmingDelete(open); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Eliminar tarea</DialogTitle>
+            <DialogDescription>¿Estás seguro de que quieres eliminar la tarea "{selectedTask?.title}"? Esta acción no se puede deshacer.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={pending} onClick={() => setIsConfirmingDelete(false)}>Cancelar</Button>
+            <Button variant="destructive" disabled={pending} onClick={handleDeleteTask}>{pending ? 'Eliminando…' : 'Sí, eliminar'}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={isRenaming} onOpenChange={open => { if (!pending) setIsRenaming(open); }}>
