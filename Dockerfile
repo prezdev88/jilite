@@ -41,4 +41,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD cp schema.prisma prisma/schema.prisma && node scripts/backfill-project-codes.cjs && npx prisma db push --skip-generate && node server.js
+CMD ["sh", "-c", "cp schema.prisma prisma/schema.prisma && node scripts/backfill-project-codes.cjs && node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma --skip-generate && exec node server.js"]

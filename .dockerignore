@@ -1,0 +1,16 @@
+.git
+.next
+node_modules
+
+.env*
+*.log
+*.tsbuildinfo
+
+prisma/*.db
+prisma/*.db-journal
+
+coverage
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+README.md
