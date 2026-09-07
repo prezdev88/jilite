@@ -107,13 +107,13 @@ export function ProjectView({ project }: { project: BoardProject }) {
         {activePlugins.map(plugin => (
           <button 
             key={plugin.id}
-            className={`pb-3 border-b-2 text-sm font-medium ${activeTab === plugin.id ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
+            className={`pb-3 border-b-2 text-sm font-medium flex items-center gap-2 ${activeTab === plugin.id ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
             onClick={() => setActiveTab(plugin.id)}
           >
-            {plugin.name}
+            {plugin.icon} {plugin.name}
           </button>
         ))}
-        <button 
+        <button
           className={`pb-3 border-b-2 text-sm font-medium flex items-center gap-2 ${activeTab === 'plugins' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
           onClick={() => setActiveTab('plugins')}
         >
@@ -141,7 +141,10 @@ export function ProjectView({ project }: { project: BoardProject }) {
                   <div key={plugin.id} className="border border-[#2e2e35] rounded-md p-4 bg-[#1b1b20]">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="text-md font-medium text-white">{plugin.name}</h3>
+                        <h3 className="flex items-center gap-2 text-md font-medium text-white">
+                          {plugin.icon}
+                          {plugin.name}
+                        </h3>
                         <p className="text-sm text-gray-400">{plugin.description}</p>
                       </div>
                       <Switch 

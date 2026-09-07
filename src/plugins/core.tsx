@@ -1,4 +1,4 @@
-import { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 
 export interface JilitePlugin {
   /** Un identificador único para el plugin, ej: jilite.kanban */
@@ -9,6 +9,9 @@ export interface JilitePlugin {
   
   /** Descripción de lo que hace el plugin */
   description: string;
+
+  /** Ícono del plugin (componente JSX, ej: <List size={16} />) */
+  icon: ReactNode;
   
   /** Componente React que se renderizará cuando el plugin esté activo. Recibe el objeto del proyecto como prop. */
   components: {
