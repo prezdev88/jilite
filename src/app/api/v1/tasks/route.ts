@@ -39,13 +39,14 @@ export async function POST(req: Request) {
       data: { nextTaskNumber: { increment: 1 } },
       select: { nextTaskNumber: true },
     });
-    const count = await tx.task.count({ where: { statusId: body.statusId } });
+    const parsedStatusId = typeof body.statusId === 'string' ? body.statusId : null;
+    const count = await tx.task.count({ where: { statusId: parsedStatusId, projectId } });
     return tx.task.create({
       data: {
         title,
         detail: typeof body.detail === 'string' ? body.detail : null,
         projectId,
-        statusId: typeof body.statusId === 'string' ? body.statusId : null,
+        statusId: parsedStatusId,
         someOtherId: typeof body.someOtherId === 'string' ? body.someOtherId : null,
         order: count,
         number: project.nextTaskNumber,
