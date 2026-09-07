@@ -7,6 +7,7 @@ import { Project, Status, Task, Label } from '@prisma/client';
 import { TaskWithLabels } from '@/lib/task-types';
 import { TaskDetails } from '@/components/task-details';
 import { TaskLabels } from '@/components/task-labels';
+import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,8 +160,32 @@ export default function BacklogView({ project }: { project: BoardProject }) {
       <Dialog open={!!selectedTask} onOpenChange={open => { if (!open && !pending) setSelectedTask(null); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogDescription>
+            <DialogDescription className="flex items-center gap-2">
               <Link className="entity-code" href={`/tasks/${project.code}-${selectedTask?.number}`}>{project.code}-{selectedTask?.number}</Link>
+              <span>·</span>
+              {selectedTask && (
+                <TaskStatusSelector 
+                  statusId={selectedTask.statusId} 
+                  statuses={project.statuses} 
+                  onChange={async (newStatusId) => {
+                    const previousTasks = tasks;
+                    setTasks(current => current.map(t => t.id === selectedTask.id ? { ...t, statusId: newStatusId, status: project.statuses.find(s => s.id === newStatusId) || null } : t));
+                    setSelectedTask(current => current ? { ...current, statusId: newStatusId, status: project.statuses.find(s => s.id === newStatusId) || null } : null);
+                    try {
+                      await fetch('/api/v1/tasks/move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ taskId: selectedTask.id, newStatusId, newOrder: selectedTask.order })
+                      }).then(res => { if (!res.ok) throw new Error(); });
+                    } catch {
+                      setTasks(previousTasks);
+                      setSelectedTask(previousTasks.find(t => t.id === selectedTask.id) || null);
+                      setError('No pudimos mover la tarea.');
+                    }
+                  }} 
+                  disabled={pending} 
+                />
+              )}
             </DialogDescription>
             <DialogTitle>{selectedTask?.title}</DialogTitle>
           </DialogHeader>

@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TaskDetails } from '@/components/task-details';
 import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
-import { KanbanStatus } from './kanban-status';
+import { TaskStatus } from '@/components/task-status';
+import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -184,7 +185,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
               const visibleTasks = statusTasks.filter(matchesFilters);
               return (
                 <section key={status.id} className="kanban-board-column" aria-label={status.name}>
-                  <div className="status-heading"><h2><KanbanStatus status={status} /></h2><span className="count-badge">{hasActiveFilters ? visibleTasks.length + '/' : ''}{statusTasks.length}</span></div>
+                  <div className="status-heading"><h2><TaskStatus status={status} /></h2><span className="count-badge">{hasActiveFilters ? visibleTasks.length + '/' : ''}{statusTasks.length}</span></div>
                   <Droppable droppableId={status.id} isDropDisabled={hasActiveFilters || pending}>
                     {(provided, snapshot) => (
                       <div {...provided.droppableProps} ref={provided.innerRef} className={'task-dropzone' + (snapshot.isDraggingOver ? ' dragging-over' : '')}>
@@ -244,7 +245,34 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
       )}
       <Dialog open={!!selectedTask} onOpenChange={open => { if (!open && !pending) setSelectedTask(null); }}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogDescription><Link className="entity-code" href={`/tasks/${project.code}-${selectedTask?.number}`}>{project.code}-{selectedTask?.number}</Link> · <KanbanStatus status={statuses.find(status => status.id === selectedTask?.statusId)} /></DialogDescription><DialogTitle>{selectedTask?.title}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogDescription className="flex items-center gap-2">
+              <Link className="entity-code" href={`/tasks/${project.code}-${selectedTask?.number}`}>
+                {project.code}-{selectedTask?.number}
+              </Link>
+              <span>·</span>
+              {selectedTask && (
+                <TaskStatusSelector 
+                  statusId={selectedTask.statusId} 
+                  statuses={statuses} 
+                  onChange={async (newStatusId) => {
+                    const previousTasks = tasks;
+                    setTasks(current => current.map(t => t.id === selectedTask.id ? { ...t, statusId: newStatusId } : t));
+                    setSelectedTask(current => current ? { ...current, statusId: newStatusId } : null);
+                    try {
+                      await request('/api/v1/tasks/move', 'POST', { taskId: selectedTask.id, newStatusId, newOrder: selectedTask.order });
+                    } catch {
+                      setTasks(previousTasks);
+                      setSelectedTask(previousTasks.find(t => t.id === selectedTask.id) || null);
+                      setError('No pudimos mover la tarea.');
+                    }
+                  }} 
+                  disabled={pending} 
+                />
+              )}
+            </DialogDescription>
+            <DialogTitle>{selectedTask?.title}</DialogTitle>
+          </DialogHeader>
           {selectedTask && <TaskDetails key={selectedTask.id} task={selectedTask} availableLabels={labels} disabled={pending} onBusyChange={setPending} onLabelCreated={label => {
             setLabels(current => current.some(item => item.id === label.id)
               ? current

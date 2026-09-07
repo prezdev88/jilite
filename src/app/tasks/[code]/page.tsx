@@ -17,13 +17,14 @@ export default async function TaskPage({ params }: { params: { code: string } })
     },
   });
   if (!task) notFound();
-  const [projects, labels] = await Promise.all([
+  const [projects, labels, statuses] = await Promise.all([
     prisma.project.findMany({ select: { id: true, name: true, code: true } }),
     prisma.label.findMany({ where: { projectId: task.projectId }, orderBy: { name: 'asc' } }),
+    prisma.status.findMany({ where: { projectId: task.projectId }, orderBy: { order: 'asc' } }),
   ]);
   return (
     <WorkspaceShell projects={projects} activeProject={task.project}>
-      <TaskPageView key={task.id} task={task} availableLabels={labels} />
+      <TaskPageView key={task.id} task={task} availableLabels={labels} availableStatuses={statuses} />
     </WorkspaceShell>
   );
 }
