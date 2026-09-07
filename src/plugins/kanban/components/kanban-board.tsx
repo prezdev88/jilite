@@ -6,8 +6,8 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import { Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { TaskDetails } from './task-details';
-import { TaskLabels, taskLabelStyle } from './task-labels';
+import { TaskDetails } from '@/components/task-details';
+import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
 import { ColumnStatus } from './column-status';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
