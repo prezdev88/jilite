@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { automaticLabelColor, labelNameKey, parseLabelNames } from '@/lib/labels';
 import { eventEmitter } from '@/lib/events';
+import { dispatchPluginEvent } from '@/lib/plugin-events';
 
 const MAX_LABELS_PER_REQUEST = 20;
 
@@ -51,7 +52,10 @@ export async function POST(req: Request) {
     const labelsByName = new Map(existingByName);
     createdLabels.forEach(label => labelsByName.set(labelNameKey(label.name), label));
     const labels = names.map(name => labelsByName.get(labelNameKey(name))!);
-    if (createdLabels.length) eventEmitter.emit('update');
+    if (createdLabels.length) {
+      createdLabels.forEach(label => dispatchPluginEvent(projectId, 'label:created', { label }));
+      eventEmitter.emit('update');
+    }
     return NextResponse.json({ labels, created: createdLabels.length }, { status: createdLabels.length ? 201 : 200 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

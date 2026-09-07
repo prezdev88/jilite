@@ -14,4 +14,7 @@ export interface JilitePlugin {
   components: {
     ProjectView: ComponentType<{ project: any }>;
   };
+
+  /** Suscripción a eventos del backend (ej: "task:status_changed") */
+  events?: Record<string, (payload: any) => Promise<void> | void>;
 }

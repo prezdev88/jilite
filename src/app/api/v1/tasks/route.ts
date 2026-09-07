@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { eventEmitter } from '@/lib/events';
+import { dispatchPluginEvent } from '@/lib/plugin-events';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
   if (!task) {
     return NextResponse.json({ error: 'Todas las etiquetas deben pertenecer al proyecto.' }, { status: 400 });
   }
+  dispatchPluginEvent(task.projectId, 'task:created', { task });
   eventEmitter.emit('update');
   return NextResponse.json(task, { status: 201 });
 }
@@ -81,6 +83,7 @@ export async function DELETE(req: Request) {
     revalidatePath('/');
     revalidatePath(`/projects/${task.projectId}`);
     revalidatePath(`/tasks/${task.project.code}-${task.number}`);
+    dispatchPluginEvent(task.projectId, 'task:deleted', { task });
     eventEmitter.emit('update');
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -135,6 +138,7 @@ export async function PATCH(req: Request) {
     });
     revalidatePath(`/projects/${task.projectId}`);
     revalidatePath(`/tasks/${project.code}-${task.number}`);
+    dispatchPluginEvent(task.projectId, 'task:updated', { task });
     eventEmitter.emit('update');
     return NextResponse.json(task);
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { eventEmitter } from '@/lib/events';
+import { dispatchPluginEvent } from '@/lib/plugin-events';
 
 export async function GET() {
   const projects = await prisma.project.findMany({
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
         }
       }
     });
+    dispatchPluginEvent(project.id, 'project:created', { project });
     eventEmitter.emit('update');
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
@@ -58,6 +60,7 @@ export async function PATCH(req: Request) {
       where: { id: body.id }, 
       data: { name, description } 
     });
+    dispatchPluginEvent(project.id, 'project:updated', { project });
     eventEmitter.emit('update');
     return NextResponse.json(project);
   } catch (error) {
