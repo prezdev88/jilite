@@ -48,7 +48,6 @@ export async function POST(req: Request) {
         detail: typeof body.detail === 'string' ? body.detail : null,
         projectId,
         statusId: parsedStatusId,
-        someOtherId: typeof body.someOtherId === 'string' ? body.someOtherId : null,
         order: count,
         number: project.nextTaskNumber,
         labels: { connect: uniqueLabelIds.map(id => ({ id })) },

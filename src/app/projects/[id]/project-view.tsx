@@ -104,6 +104,12 @@ export function ProjectView({ project }: { project: BoardProject }) {
       </div>
 
       <div className="flex border-b border-[#2e2e35] mb-4 pb-0 space-x-6 px-1">
+        <button
+          className={`pb-3 border-b-2 text-sm font-medium flex items-center gap-2 ${activeTab === 'plugins' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
+          onClick={() => setActiveTab('plugins')}
+        >
+          <Settings size={15} /> Configuración / Plugins
+        </button>
         {activePlugins.map(plugin => (
           <button 
             key={plugin.id}
@@ -113,12 +119,6 @@ export function ProjectView({ project }: { project: BoardProject }) {
             {plugin.icon} {plugin.name}
           </button>
         ))}
-        <button
-          className={`pb-3 border-b-2 text-sm font-medium flex items-center gap-2 ${activeTab === 'plugins' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
-          onClick={() => setActiveTab('plugins')}
-        >
-          <Settings size={15} /> Configuración / Plugins
-        </button>
       </div>
 
       <div className="flex-1 overflow-hidden">
