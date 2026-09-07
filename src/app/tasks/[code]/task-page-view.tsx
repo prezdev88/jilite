@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Project, Column, Label } from '@prisma/client';
 import { ArrowLeft, Trash2 } from 'lucide-react';
-import { TaskDetails } from '@/components/task-details';
-import { ColumnStatus } from '@/components/column-status';
+import { TaskDetails } from '@/plugins/kanban/components/task-details';
+import { ColumnStatus } from '@/plugins/kanban/components/column-status';
 import { Button } from '@/components/ui/button';
 import type { TaskWithLabels } from '@/lib/task-types';
 

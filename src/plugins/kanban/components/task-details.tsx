@@ -10,7 +10,7 @@ const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
 const MDPreview = dynamic(() => import('@uiw/react-md-editor').then((mod) => mod.default.Markdown), { ssr: false });
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
+import { TaskLabels, taskLabelStyle } from './task-labels';
 import { automaticLabelColor, labelNameKey, normalizeLabelName, parseLabelNames } from '@/lib/labels';
 import type { TaskWithLabels } from '@/lib/task-types';
 

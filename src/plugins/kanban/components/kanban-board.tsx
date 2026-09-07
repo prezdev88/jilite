@@ -6,9 +6,9 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import { Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { TaskDetails } from '@/components/task-details';
-import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
-import { ColumnStatus } from '@/components/column-status';
+import { TaskDetails } from './task-details';
+import { TaskLabels, taskLabelStyle } from './task-labels';
+import { ColumnStatus } from './column-status';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,18 +33,14 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
   const [selectedTask, setSelectedTask] = useState<TaskWithLabels | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  const [isRenaming, setIsRenaming] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const [displayedProjectName, setDisplayedProjectName] = useState(project.name);
-  const [projectName, setProjectName] = useState(project.name);
-  const [renameError, setRenameError] = useState('');
 
   useEffect(() => { setIsMounted(true); }, []);
   useEffect(() => {
     setTasks(project.tasks);
     setColumns(project.columns);
     setLabels(project.labels);
-    setDisplayedProjectName(project.name);
+    
   }, [project.tasks, project.columns, project.labels, project.name]);
 
   const hasActiveFilters = !!query || activeLabelIds.length > 0;
@@ -62,26 +58,6 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
       : [...current, labelId]);
   }
 
-  async function renameProject(event: FormEvent) {
-    event.preventDefault();
-    if (pending || !projectName.trim()) return;
-    setPending(true);
-    setRenameError('');
-    try {
-      const response = await fetch('/api/v1/projects', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: project.id, name: projectName.trim() }),
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        setRenameError(result.error || 'No pudimos cambiar el nombre.');
-        return;
-      }
-      setIsRenaming(false);
-      setDisplayedProjectName(projectName.trim());
-    } catch { setRenameError('No pudimos cambiar el nombre. Inténtalo de nuevo.'); }
-    finally { setPending(false); }
-  }
 
   async function request(url: string, method: string, body?: object) {
     const response = await fetch(url, {
@@ -167,16 +143,11 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
 
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <span className="entity-code project-heading-code">{project.code}</span>
-          <div className="project-title-row"><h1>{displayedProjectName}</h1><button className="rename-project-button" aria-label="Cambiar nombre del proyecto" title="Cambiar nombre" disabled={pending} onClick={() => { setProjectName(displayedProjectName); setRenameError(''); setIsRenaming(true); }}><Pencil size={15} /></button></div>
-          {project.description && <p className="page-description">{project.description}</p>}
+      <div className="board-toolbar" style={{ marginTop: '1rem' }}>
+        <div className="flex items-center gap-4">
+          <Button disabled={pending} onClick={() => columns.length ? openTaskForm(columns[0].id) : setIsAddingColumn(true)}><Plus size={16} /> {columns.length ? 'Nueva tarea' : 'Nueva lista'}</Button>
+          <span className="board-summary">{hasActiveFilters ? `${visibleTaskCount} de ` : ''}{tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}</span>
         </div>
-        <Button disabled={pending} onClick={() => columns.length ? openTaskForm(columns[0].id) : setIsAddingColumn(true)}><Plus size={16} /> {columns.length ? 'Nueva tarea' : 'Nueva lista'}</Button>
-      </div>
-      <div className="board-toolbar">
-        <span className="board-summary">{hasActiveFilters ? `${visibleTaskCount} de ` : ''}{tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}</span>
         <div className="search-field"><Search size={16} /><input aria-label="Buscar tareas" placeholder="Buscar tareas…" value={query} onChange={event => setQuery(event.target.value)} />{query && <button aria-label="Limpiar búsqueda" onClick={() => setQuery('')}><X size={14} /></button>}</div>
       </div>
       {labels.length > 0 && (
@@ -296,16 +267,6 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
             <Button variant="outline" disabled={pending} onClick={() => setIsConfirmingDelete(false)}>Cancelar</Button>
             <Button variant="destructive" disabled={pending} onClick={handleDeleteTask}>{pending ? 'Eliminando…' : 'Sí, eliminar'}</Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={isRenaming} onOpenChange={open => { if (!pending) setIsRenaming(open); }}>
-        <DialogContent className="sm:max-w-lg">
-          <form onSubmit={renameProject} className="dialog-form">
-            <DialogHeader><DialogTitle>Cambiar nombre</DialogTitle><DialogDescription>El código {project.code} y los códigos de las tareas se mantienen.</DialogDescription></DialogHeader>
-            <div className="form-field"><label htmlFor="rename-project">Nombre del proyecto</label><Input id="rename-project" autoFocus value={projectName} onChange={event => setProjectName(event.target.value)} required maxLength={120} /></div>
-            {renameError && <p className="error-message" role="alert">{renameError}</p>}
-            <DialogFooter><Button variant="outline" type="button" disabled={pending} onClick={() => setIsRenaming(false)}>Cancelar</Button><Button type="submit" disabled={pending || !projectName.trim()}>{pending ? 'Guardando…' : 'Guardar nombre'}</Button></DialogFooter>
-          </form>
         </DialogContent>
       </Dialog>
     </>
