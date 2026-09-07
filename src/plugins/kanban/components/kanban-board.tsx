@@ -12,7 +12,6 @@ import { TaskStatus } from '@/components/task-status';
 import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import type { TaskWithLabels } from '@/lib/task-types';
 
@@ -230,7 +229,6 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
                     <form className="task-create-form" onSubmit={event => handleCreateTask(event, status.id)}>
                       <label htmlFor={'task-title-' + status.id}>Nueva tarea</label>
                       <Input id={'task-title-' + status.id} autoFocus placeholder="¿Qué hay que hacer?" value={newTaskTitle} onChange={event => setNewTaskTitle(event.target.value)} required />
-                      <Textarea aria-label="Descripción de la tarea" placeholder="Añade un poco de contexto (opcional)" value={newTaskDetail} onChange={event => setNewTaskDetail(event.target.value)} rows={3} />
                       <div className="flex gap-2"><Button size="sm" type="submit" disabled={pending || !newTaskTitle.trim()}>{pending ? 'Guardando…' : 'Crear tarea'}</Button><Button size="sm" variant="ghost" disabled={pending} onClick={() => setActiveStatus(null)}>Cancelar</Button></div>
                     </form>
                   ) : <button className="add-task-button" disabled={pending} onClick={() => openTaskForm(status.id)}><Plus size={16} /> Añadir tarea</button>}

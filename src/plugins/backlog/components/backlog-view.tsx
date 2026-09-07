@@ -2,16 +2,19 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Tag, Search } from 'lucide-react';
+import { Plus, Trash2, Tag, Search, X } from 'lucide-react';
 import { Project, Status, Task, Label } from '@prisma/client';
 import { TaskWithLabels } from '@/lib/task-types';
 import { TaskDetails } from '@/components/task-details';
-import { TaskLabels } from '@/components/task-labels';
+import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
+import { automaticLabelColor, labelNameKey, normalizeLabelName, parseLabelNames } from '@/lib/labels';
 import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import dynamic from 'next/dynamic';
+const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
 
 type BoardProject = Project & { 
   statuses: Status[]; 
@@ -28,9 +31,63 @@ export default function BacklogView({ project }: { project: BoardProject }) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDetail, setNewTaskDetail] = useState('');
+  const [newTaskStatusId, setNewTaskStatusId] = useState<string | null>(null);
+  const [newTaskLabelIds, setNewTaskLabelIds] = useState<string[]>([]);
+  const [newLabelNames, setNewLabelNames] = useState('');
+  const [creatingLabel, setCreatingLabel] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  
+  async function createLabels() {
+    const names = parseLabelNames(newLabelNames);
+    if (pending || creatingLabel || !names.length) return;
+    setCreatingLabel(true);
+    setError('');
+    try {
+      const response = await fetch('/api/v1/labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names, projectId: project.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) { setError(result.error || 'Error'); return; }
+      setLabels(current => [...current, ...result.labels.filter((l: Label) => !current.some(item => item.id === l.id))].sort((a, b) => a.name.localeCompare(b.name, 'es')));
+      setNewTaskLabelIds(current => Array.from(new Set([...current, ...result.labels.map((l: Label) => l.id)])));
+      setNewLabelNames('');
+    } catch { setError('No pudimos crear la etiqueta.'); }
+    finally { setCreatingLabel(false); }
+  }
+
+  function handleNewLabelKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void createLabels();
+    }
+  }
+
+  function selectExistingSuggestion(label: Label) {
+    setNewTaskLabelIds(current => current.includes(label.id) ? current : [...current, label.id]);
+    const lastComma = newLabelNames.lastIndexOf(',');
+    setNewLabelNames(lastComma < 0 ? '' : `${newLabelNames.slice(0, lastComma).trim()}, `);
+  }
+
+  const draftNames = newLabelNames.split(',').map(normalizeLabelName).filter(Boolean);
+  const currentDraft = normalizeLabelName(newLabelNames.split(',').at(-1) || '');
+  const currentDraftKey = labelNameKey(currentDraft);
+  const matchingLabels = currentDraftKey ? labels.filter(label => labelNameKey(label.name).includes(currentDraftKey)).slice(0, 5) : [];
+
+  
+  function resetForm() {
+    setNewTaskTitle('');
+    setNewTaskDetail('');
+    setNewTaskStatusId(null);
+    setNewTaskLabelIds([]);
+    setNewLabelNames('');
+    setError('');
+    setIsAddingTask(false);
+  }
 
   async function handleCreateTask(event: React.FormEvent) {
     event.preventDefault();
@@ -44,9 +101,10 @@ export default function BacklogView({ project }: { project: BoardProject }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: newTaskTitle.trim(),
-          detail: newTaskDetail.trim(),
+          detail: newTaskDetail.trim() || undefined,
           projectId: project.id,
-          // Not passing statusId intentionally so it stays in the backlog
+          statusId: newTaskStatusId,
+          labelIds: newTaskLabelIds,
         }),
       });
 
@@ -56,9 +114,7 @@ export default function BacklogView({ project }: { project: BoardProject }) {
         return;
       }
       setTasks([...tasks, result]);
-      setIsAddingTask(false);
-      setNewTaskTitle('');
-      setNewTaskDetail('');
+      resetForm();
     } catch {
       setError('Error de red al crear la tarea.');
     } finally {
@@ -103,15 +159,86 @@ export default function BacklogView({ project }: { project: BoardProject }) {
 
       <div className="flex-1 overflow-y-auto pr-2">
         {isAddingTask && (
-          <form className="task-create-form mb-4" onSubmit={handleCreateTask}>
-            <label htmlFor="task-title-backlog">Nueva tarea en el Backlog</label>
-            <Input id="task-title-backlog" autoFocus placeholder="¿Qué hay que hacer?" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} required />
-            <Textarea aria-label="Descripción de la tarea" placeholder="Añade un poco de contexto (opcional)" value={newTaskDetail} onChange={e => setNewTaskDetail(e.target.value)} rows={3} />
-            <div className="flex gap-2">
-              <Button size="sm" type="submit" disabled={pending || !newTaskTitle.trim()}>{pending ? 'Guardando…' : 'Crear tarea'}</Button>
-              <Button size="sm" variant="ghost" disabled={pending} onClick={() => setIsAddingTask(false)}>Cancelar</Button>
+          <form className="mb-4 bg-[#1b1b20] border border-[#2e2e35] rounded-lg p-5 flex flex-col gap-4 shadow-sm" onSubmit={handleCreateTask}>
+            <div className="flex items-center justify-between border-b border-[#2e2e35] pb-3">
+              <h3 className="text-sm font-medium text-gray-200">Nueva tarea</h3>
+              <button type="button" onClick={resetForm} className="text-gray-500 hover:text-gray-300 transition-colors">
+                <X size={16} />
+              </button>
             </div>
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="task-title-backlog" className="text-xs text-gray-400">Título</label>
+              <Input id="task-title-backlog" autoFocus placeholder="¿Qué hay que hacer?" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} required className="bg-[#131316] border-[#2e2e35]" />
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="flex flex-col gap-2 flex-1">
+                <label className="text-xs text-gray-400">Estado inicial</label>
+                <select className="bg-[#131316] border border-[#2e2e35] h-10 px-3 rounded-md text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" value={newTaskStatusId || ''} onChange={e => setNewTaskStatusId(e.target.value || null)}>
+                  <option value="">Backlog</option>
+                  {project.statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2" data-color-mode="dark">
+              <label className="text-xs text-gray-400">Descripción (opcional)</label>
+              <MDEditor value={newTaskDetail} onChange={val => setNewTaskDetail(val || '')} textareaProps={{ placeholder: 'Añade un poco de contexto...' }} preview="edit" height={180} className="border-[#2e2e35]" />
+            </div>
+
+            <fieldset className="label-editor pt-2 border-none p-0 m-0">
+              <legend className="text-xs text-gray-400 mb-2">Etiquetas</legend>
+              {labels.length > 0 ? (
+                <div className="label-options mb-2">
+                  {labels.map(label => {
+                    const selected = newTaskLabelIds.includes(label.id);
+                    return (
+                      <button key={label.id} type="button" className={`label-option${selected ? ' selected' : ''}`} style={taskLabelStyle(label.color)} aria-pressed={selected} disabled={pending || creatingLabel} onClick={() => { if (selected) setNewTaskLabelIds(newTaskLabelIds.filter(id => id !== label.id)); else setNewTaskLabelIds([...newTaskLabelIds, label.id]); }}>
+                        <span className="task-label-dot" aria-hidden="true" />{label.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : <p className="field-hint mb-2">Este proyecto todavía no tiene etiquetas.</p>}
+              <div className="label-create-row mb-1">
+                <Input aria-label="Nombres de las nuevas etiquetas" placeholder="Urgente, Backend, Diseño" value={newLabelNames} disabled={pending || creatingLabel} onChange={event => setNewLabelNames(event.target.value)} onKeyDown={handleNewLabelKeyDown} className="bg-[#131316] border-[#2e2e35]" />
+                <Button type="button" variant="outline" size="icon" disabled={pending || creatingLabel || !parseLabelNames(newLabelNames).length} onClick={() => void createLabels()}><Plus size={16} /></Button>
+              </div>
+              <p className="field-hint mb-2">Separa varias etiquetas con comas. El color se asigna automáticamente.</p>
+              
+              {draftNames.length > 0 && (
+                <div className="label-draft-list mb-2">
+                  {draftNames.map((name, index) => {
+                    const existing = labels.find(label => labelNameKey(label.name) === labelNameKey(name));
+                    const repeated = draftNames.findIndex(candidate => labelNameKey(candidate) === labelNameKey(name)) !== index;
+                    const newLabelIndex = draftNames.slice(0, index).filter((candidate, candidateIndex, all) => all.findIndex(item => labelNameKey(item) === labelNameKey(candidate)) === candidateIndex && !labels.some(label => labelNameKey(label.name) === labelNameKey(candidate))).length;
+                    const color = existing?.color || automaticLabelColor(labels.length + newLabelIndex);
+                    return (
+                      <span className={`label-draft${existing || repeated ? ' existing' : ''}`} style={taskLabelStyle(color)} key={`${labelNameKey(name)}-${index}`}>
+                        <span className="task-label-dot" aria-hidden="true" />{existing?.name || name}
+                        <small>{repeated ? 'repetida' : existing ? 'ya existe' : 'nueva'}</small>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              {matchingLabels.length > 0 && (
+                <div className="existing-label-suggestions">
+                  <span>Coincidencias:</span>
+                  {matchingLabels.map(label => (
+                    <button type="button" style={taskLabelStyle(label.color)} disabled={pending || creatingLabel} onClick={() => selectExistingSuggestion(label)} key={label.id}>
+                      <span className="task-label-dot" aria-hidden="true" /> {label.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+
+            {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+            <div className="flex gap-3 justify-end pt-2 border-t border-[#2e2e35]">
+              <Button size="sm" variant="ghost" disabled={pending} onClick={resetForm} className="text-red-500 hover:text-red-400 hover:bg-red-500/10">Cancelar</Button>
+              <Button size="sm" type="submit" disabled={pending || !newTaskTitle.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 hover:border-emerald-700">{pending ? 'Guardando…' : 'Crear tarea'}</Button>
+            </div>
           </form>
         )}
 

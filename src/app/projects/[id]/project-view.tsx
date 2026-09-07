@@ -122,7 +122,14 @@ export function ProjectView({ project }: { project: BoardProject }) {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {ActivePluginComponent && <ActivePluginComponent project={project} />}
+        {activePlugins.map(plugin => {
+          const PluginComponent = plugin.components.ProjectView;
+          return (
+            <div key={plugin.id} style={{ display: activeTab === plugin.id ? 'block' : 'none', height: '100%' }}>
+              {PluginComponent && <PluginComponent project={project} />}
+            </div>
+          );
+        })}
 
         {activeTab === 'plugins' && (
           <div className="plugins-settings">
