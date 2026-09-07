@@ -18,6 +18,7 @@ model Project {
   tasks          Task[]
   labels         Label[]
   plugins        ProjectPlugin[]
+  eventLogs      EventLog[]
 }
 
 model ProjectPlugin {
