@@ -47,14 +47,6 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
     setDisplayedProjectName(project.name);
   }, [project.tasks, project.columns, project.labels, project.name]);
 
-  useEffect(() => {
-    const eventSource = new EventSource('/api/v1/sync');
-    eventSource.onmessage = () => {
-      router.refresh();
-    };
-    return () => eventSource.close();
-  }, [router]);
-
   const hasActiveFilters = !!query || activeLabelIds.length > 0;
 
   function matchesFilters(task: TaskWithLabels) {

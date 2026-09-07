@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import KanbanBoard from './kanban-board';
+import { ProjectView } from './project-view';
 import { notFound } from 'next/navigation';
 
 import { WorkspaceShell } from '@/components/workspace-shell';
@@ -12,6 +12,7 @@ export default async function ProjectPage({ params }: { params: { id: string } }
     include: {
       columns: { orderBy: { order: 'asc' } },
       labels: { orderBy: { name: 'asc' } },
+      plugins: true,
       tasks: {
         orderBy: { order: 'asc' },
         include: { labels: { orderBy: { name: 'asc' } } },
@@ -25,7 +26,7 @@ export default async function ProjectPage({ params }: { params: { id: string } }
 
   return (
     <WorkspaceShell projects={projects} activeProject={project}>
-      <KanbanBoard project={project} />
+      <ProjectView project={project} />
     </WorkspaceShell>
   );
 }

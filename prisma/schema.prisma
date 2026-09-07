@@ -17,6 +17,17 @@ model Project {
   columns        Column[]
   tasks          Task[]
   labels         Label[]
+  plugins        ProjectPlugin[]
+}
+
+model ProjectPlugin {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pluginId  String
+  isActive  Boolean @default(false)
+
+  @@unique([projectId, pluginId])
 }
 
 model Column {
