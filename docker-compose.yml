@@ -1,5 +1,7 @@
 services:
   jilite:
+    container_name: jilite
+    image: jilite
     build:
       context: .
       dockerfile: Dockerfile
