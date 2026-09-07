@@ -10,6 +10,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN node scripts/gather-plugin-schemas.mjs
 RUN npx prisma generate
 ENV Next_TELEMETRY_DISABLED=1
 RUN npm run build
@@ -26,8 +27,7 @@ RUN adduser --system --uid 1001 nextjs
 RUN mkdir -p public
 
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder /app/prisma/schema.prisma ./schema.prisma
+COPY --from=builder /app/prisma/schema ./schema-dist
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
@@ -41,4 +41,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "cp schema.prisma prisma/schema.prisma && node scripts/backfill-project-codes.cjs && node node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma --skip-generate && exec node server.js"]
+CMD ["sh", "-c", "mkdir -p prisma/schema && cp -r schema-dist/* prisma/schema/ && node scripts/backfill-project-codes.cjs && node node_modules/prisma/build/index.js db push --schema=prisma/schema --skip-generate && exec node server.js"]
