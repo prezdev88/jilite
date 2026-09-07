@@ -8,6 +8,7 @@ import { TaskWithLabels } from '@/lib/task-types';
 import { availablePlugins } from '@/plugins/registry';
 
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
@@ -33,7 +34,9 @@ export function ProjectView({ project }: { project: BoardProject }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [pending, setPending] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
+  const [projectDescription, setProjectDescription] = useState(project.description || '');
   const [displayedProjectName, setDisplayedProjectName] = useState(project.name);
+  const [displayedProjectDescription, setDisplayedProjectDescription] = useState(project.description || '');
   const [renameError, setRenameError] = useState('');
 
   // What plugins are active?
@@ -67,14 +70,15 @@ export function ProjectView({ project }: { project: BoardProject }) {
       const response = await fetch('/api/v1/projects', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: project.id, name: projectName.trim() })
+        body: JSON.stringify({ id: project.id, name: projectName.trim(), description: projectDescription.trim() || null })
       });
       if (!response.ok) throw new Error();
       const updated = await response.json();
       setDisplayedProjectName(updated.name);
+      setDisplayedProjectDescription(updated.description || '');
       setIsRenaming(false);
     } catch {
-      setRenameError('No se pudo cambiar el nombre. Inténtalo de nuevo.');
+      setRenameError('No se pudo guardar el proyecto. Inténtalo de nuevo.');
     } finally {
       setPending(false);
     }
@@ -91,11 +95,11 @@ export function ProjectView({ project }: { project: BoardProject }) {
           <span className="entity-code project-heading-code">{project.code}</span>
           <div className="project-title-row">
             <h1>{displayedProjectName}</h1>
-            <button className="rename-project-button" aria-label="Cambiar nombre del proyecto" title="Cambiar nombre" disabled={pending} onClick={() => { setProjectName(displayedProjectName); setRenameError(''); setIsRenaming(true); }}>
+            <button className="rename-project-button" aria-label="Editar proyecto" title="Editar proyecto" disabled={pending} onClick={() => { setProjectName(displayedProjectName); setProjectDescription(displayedProjectDescription); setRenameError(''); setIsRenaming(true); }}>
               <Pencil size={15} />
             </button>
           </div>
-          {project.description && <p className="page-description">{project.description}</p>}
+          {displayedProjectDescription && <p className="page-description">{displayedProjectDescription}</p>}
         </div>
       </div>
 
@@ -156,10 +160,17 @@ export function ProjectView({ project }: { project: BoardProject }) {
       <Dialog open={isRenaming} onOpenChange={open => { if (!pending) setIsRenaming(open); }}>
         <DialogContent className="sm:max-w-lg">
           <form onSubmit={renameProject} className="dialog-form">
-            <DialogHeader><DialogTitle>Cambiar nombre</DialogTitle><DialogDescription>El código {project.code} y los códigos de las tareas se mantienen.</DialogDescription></DialogHeader>
-            <div className="form-field"><label htmlFor="rename-project">Nombre del proyecto</label><Input id="rename-project" autoFocus value={projectName} onChange={event => setProjectName(event.target.value)} required maxLength={120} /></div>
+            <DialogHeader><DialogTitle>Editar proyecto</DialogTitle><DialogDescription>El código {project.code} y los códigos de las tareas se mantienen.</DialogDescription></DialogHeader>
+            <div className="form-field">
+              <label htmlFor="rename-project">Nombre del proyecto</label>
+              <Input id="rename-project" autoFocus value={projectName} onChange={event => setProjectName(event.target.value)} required maxLength={120} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="edit-project-desc">Descripción (opcional)</label>
+              <Textarea id="edit-project-desc" value={projectDescription} onChange={event => setProjectDescription(event.target.value)} rows={3} placeholder="Añade un poco de contexto sobre este proyecto..." />
+            </div>
             {renameError && <p className="error-message" role="alert">{renameError}</p>}
-            <DialogFooter><Button variant="outline" type="button" disabled={pending} onClick={() => setIsRenaming(false)}>Cancelar</Button><Button type="submit" disabled={pending || !projectName.trim()}>{pending ? 'Guardando…' : 'Guardar nombre'}</Button></DialogFooter>
+            <DialogFooter><Button variant="outline" type="button" disabled={pending} onClick={() => setIsRenaming(false)}>Cancelar</Button><Button type="submit" disabled={pending || !projectName.trim()}>{pending ? 'Guardando…' : 'Guardar'}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

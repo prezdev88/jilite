@@ -49,11 +49,15 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const body = await req.json().catch(() => null);
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  const description = typeof body?.description === 'string' ? body.description.trim() : null;
   if (typeof body?.id !== 'string' || !name || name.length > 120) {
     return NextResponse.json({ error: 'Introduce un nombre de entre 1 y 120 caracteres.' }, { status: 400 });
   }
   try {
-    const project = await prisma.project.update({ where: { id: body.id }, data: { name } });
+    const project = await prisma.project.update({ 
+      where: { id: body.id }, 
+      data: { name, description } 
+    });
     eventEmitter.emit('update');
     return NextResponse.json(project);
   } catch (error) {
