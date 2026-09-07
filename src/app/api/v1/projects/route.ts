@@ -34,6 +34,11 @@ export async function POST(req: Request) {
             { name: 'En curso', order: 1 },
             { name: 'Terminado', order: 2 }
           ]
+        },
+        plugins: {
+          create: [
+            { pluginId: 'jilite.backlog', isActive: true }
+          ]
         }
       }
     });
