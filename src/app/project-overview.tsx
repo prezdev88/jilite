@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-type ProjectSummary = { id: string; name: string; code: string; description: string | null; _count: { tasks: number; columns: number } };
+type ProjectSummary = { id: string; name: string; code: string; description: string | null; _count: { tasks: number; statuses: number } };
 
 export default function ProjectOverview({ projects }: { projects: ProjectSummary[] }) {
   const router = useRouter();
@@ -77,7 +77,7 @@ export default function ProjectOverview({ projects }: { projects: ProjectSummary
               <div className="project-card-footer">
                 <span>{project._count.tasks} {project._count.tasks === 1 ? 'tarea' : 'tareas'}</span>
                 <span aria-hidden="true">·</span>
-                <span>{project._count.columns} listas</span>
+                <span>{project._count.statuses} listas</span>
               </div>
             </Link>
           ))}

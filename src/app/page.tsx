@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const projects = await prisma.project.findMany({
-    include: { _count: { select: { tasks: true, columns: true } } },
+    include: { _count: { select: { tasks: true, statuses: true } } },
   });
 
   return (

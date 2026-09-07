@@ -1,3 +1,3 @@
-import type { Label, Task } from '@prisma/client';
+import type { Label, Task, Status } from '@prisma/client';
 
-export type TaskWithLabels = Task & { labels: Label[] };
+export type TaskWithLabels = Task & { labels: Label[], status?: Status | null };

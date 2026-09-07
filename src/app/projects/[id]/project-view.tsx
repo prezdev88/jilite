@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, Pencil } from 'lucide-react';
-import { Project, Column, Task, Label, ProjectPlugin } from '@prisma/client';
+import { Project, Status, Task, Label, ProjectPlugin } from '@prisma/client';
 import { TaskWithLabels } from '@/lib/task-types';
 import { availablePlugins } from '@/plugins/registry';
 
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from '@/components/ui/switch';
 
 type BoardProject = Project & { 
-  columns: Column[]; 
+  statuses: Status[]; 
   labels: Label[]; 
   tasks: TaskWithLabels[];
   plugins: ProjectPlugin[];

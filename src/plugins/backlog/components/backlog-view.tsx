@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Tag, Search } from 'lucide-react';
-import { Project, Column, Task, Label } from '@prisma/client';
+import { Project, Status, Task, Label } from '@prisma/client';
 import { TaskWithLabels } from '@/lib/task-types';
 import { TaskDetails } from '@/components/task-details';
 import { TaskLabels } from '@/components/task-labels';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 type BoardProject = Project & { 
-  columns: Column[]; 
+  statuses: Status[]; 
   labels: Label[]; 
   tasks: TaskWithLabels[];
 };
@@ -45,7 +45,7 @@ export default function BacklogView({ project }: { project: BoardProject }) {
           title: newTaskTitle.trim(),
           detail: newTaskDetail.trim(),
           projectId: project.id,
-          // Not passing columnId intentionally so it stays in the backlog
+          // Not passing statusId intentionally so it stays in the backlog
         }),
       });
 
@@ -124,9 +124,21 @@ export default function BacklogView({ project }: { project: BoardProject }) {
               <div className="flex items-center gap-4">
                 <span className="entity-code text-xs w-16">{project.code}-{task.number}</span>
                 <span className="font-medium text-sm text-gray-200">{task.title}</span>
-                {task.columnId && (
-                  <span className="text-[10px] bg-[#29292f] text-gray-400 px-2 py-0.5 rounded-full">
-                    En tablero
+                {task.status ? (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                    [
+                      'bg-blue-900/30 text-blue-400 border-blue-800/50',
+                      'bg-amber-900/30 text-amber-400 border-amber-800/50',
+                      'bg-purple-900/30 text-purple-400 border-purple-800/50',
+                      'bg-pink-900/30 text-pink-400 border-pink-800/50',
+                      'bg-emerald-900/30 text-emerald-400 border-emerald-800/50'
+                    ][Math.abs(task.status.order) % 5]
+                  }`}>
+                    {task.status.name}
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-[#29292f] text-gray-400 px-2 py-0.5 rounded-full border border-[#393941]">
+                    Backlog
                   </span>
                 )}
               </div>

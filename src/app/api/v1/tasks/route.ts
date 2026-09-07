@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const tasks = await prisma.task.findMany({
     where: { projectId },
     orderBy: { order: 'asc' },
-    include: { labels: { orderBy: { name: 'asc' } } },
+    include: { labels: { orderBy: { name: 'asc' } }, status: true },
   });
   return NextResponse.json(tasks);
 }
@@ -39,19 +39,19 @@ export async function POST(req: Request) {
       data: { nextTaskNumber: { increment: 1 } },
       select: { nextTaskNumber: true },
     });
-    const count = await tx.task.count({ where: { columnId: body.columnId } });
+    const count = await tx.task.count({ where: { statusId: body.statusId } });
     return tx.task.create({
       data: {
         title,
         detail: typeof body.detail === 'string' ? body.detail : null,
         projectId,
-        columnId: typeof body.columnId === 'string' ? body.columnId : null,
-        sprintId: typeof body.sprintId === 'string' ? body.sprintId : null,
+        statusId: typeof body.statusId === 'string' ? body.statusId : null,
+        someOtherId: typeof body.someOtherId === 'string' ? body.someOtherId : null,
         order: count,
         number: project.nextTaskNumber,
         labels: { connect: uniqueLabelIds.map(id => ({ id })) },
       },
-      include: { labels: { orderBy: { name: 'asc' } } },
+      include: { labels: { orderBy: { name: 'asc' } }, status: true },
     });
   }).catch(error => {
     if (error instanceof Error && error.message === 'INVALID_LABELS') return null;

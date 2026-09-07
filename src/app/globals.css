@@ -127,11 +127,11 @@
   .clear-label-filters:hover { background: #202025; color: #dedee5; }
   .board-hint { font-size: 12px; color: #a0a0aa; margin-bottom: 20px; line-height: 1.7; }
   .kanban-scroll { display: flex; align-items: flex-start; gap: 24px; overflow-x: auto; min-height: 360px; padding: 2px 2px 25px; scrollbar-color: #3d3d45 transparent; scrollbar-width: thin; }
-  .kanban-column { flex: 1 0 265px; max-width: 360px; min-width: 0; }
-  .column-heading { display: flex; align-items: center; gap: 9px; padding: 0 4px 17px; }
-  .column-heading h2 { font-size: 13px; font-weight: 500; color: #c8c8d1; overflow-wrap: anywhere; min-width: 0; }
-  .column-status { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-  .column-status-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
+  .kanban-board-column { flex: 1 0 265px; max-width: 360px; min-width: 0; }
+  .status-heading { display: flex; align-items: center; gap: 9px; padding: 0 4px 17px; }
+  .status-heading h2 { font-size: 13px; font-weight: 500; color: #c8c8d1; overflow-wrap: anywhere; min-width: 0; }
+  .status-badge { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+  .status-badge-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
   .count-badge { font-size: 11px; color: #83838e; font-variant-numeric: tabular-nums; }
   .task-dropzone { min-height: 48px; border-radius: 7px; transition: background .15s; }
   .dragging-over { background: #24242c; outline: 1px dashed #575763; }
@@ -145,14 +145,14 @@
   .task-label { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--task-label-color) 52%, #35353b); border-radius: 999px; background: color-mix(in srgb, var(--task-label-color) 13%, #19191d); color: #c7c7cf; font-size: 10px; line-height: 1.3; overflow-wrap: anywhere; }
   .task-label-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--task-label-color); box-shadow: 0 0 0 1px #ffffff1f; }
   .task-card-labels { margin-top: 10px; }
-  .column-empty { display: grid; place-items: center; min-height: 76px; margin-bottom: 9px; border: 1px dashed #29292f; border-radius: 7px; font-size: 12px; color: #888894; }
-  .add-task-button, .add-column-button { display: flex; align-items: center; gap: 7px; color: #9494a0; font-size: 12px; padding: 9px 7px; border-radius: 6px; }
+  .status-empty { display: grid; place-items: center; min-height: 76px; margin-bottom: 9px; border: 1px dashed #29292f; border-radius: 7px; font-size: 12px; color: #888894; }
+  .add-task-button, .add-status-button { display: flex; align-items: center; gap: 7px; color: #9494a0; font-size: 12px; padding: 9px 7px; border-radius: 6px; }
   .add-task-button { width: 100%; }
-  .add-column-button { flex: 0 0 116px; padding-top: 0; height: 27px; }
-  .add-task-button:hover, .add-column-button:hover { background: #202025; color: #d5d5df; }
-  .task-create-form, .column-create-form { display: flex; flex-direction: column; gap: 11px; padding: 14px; background: #1a1a1f; border: 1px solid #393941; border-radius: 8px; }
-  .column-create-form { flex: 0 0 280px; }
-  .task-create-form > label, .column-create-form > label { font-size: 12px; font-weight: 500; }
+  .add-status-button { flex: 0 0 116px; padding-top: 0; height: 27px; }
+  .add-task-button:hover, .add-status-button:hover { background: #202025; color: #d5d5df; }
+  .task-create-form, .status-create-form { display: flex; flex-direction: column; gap: 11px; padding: 14px; background: #1a1a1f; border: 1px solid #393941; border-radius: 8px; }
+  .status-create-form { flex: 0 0 280px; }
+  .task-create-form > label, .status-create-form > label { font-size: 12px; font-weight: 500; }
   .board-loading { padding: 65px 20px; color: #a0a0aa; font-size: 13px; text-align: center; }
 
   [data-slot="dialog-overlay"] { background: #0009; backdrop-filter: blur(3px); }
@@ -214,7 +214,7 @@
   .project-list .project-card-copy { flex-basis: calc(100% - 36px); }
   .project-list .project-card-footer { margin-left: 32px; }
   .kanban-scroll { margin-right: -22px; padding-right: 22px; }
-  .kanban-column { flex-basis: 275px; }
+  .kanban-board-column { flex-basis: 275px; }
 }
 @media (max-width: 480px) {
   .project-grid { grid-template-columns: 1fr; }

@@ -6,7 +6,7 @@ import { eventEmitter } from '@/lib/events';
 export async function GET() {
   const projects = await prisma.project.findMany({
     include: {
-      columns: { orderBy: { order: 'asc' } },
+      statuses: { orderBy: { order: 'asc' } },
       labels: { orderBy: { name: 'asc' } },
     }
   });
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
         name,
         code,
         description,
-        columns: {
+        statuses: {
           create: [
             { name: 'Por hacer', order: 0 },
             { name: 'En curso', order: 1 },

@@ -10,12 +10,12 @@ export default async function ProjectPage({ params }: { params: { id: string } }
   const project = await prisma.project.findUnique({
     where: { id: params.id },
     include: {
-      columns: { orderBy: { order: 'asc' } },
+      statuses: { orderBy: { order: 'asc' } },
       labels: { orderBy: { name: 'asc' } },
       plugins: true,
       tasks: {
         orderBy: { order: 'asc' },
-        include: { labels: { orderBy: { name: 'asc' } } },
+        include: { labels: { orderBy: { name: 'asc' } }, status: true },
       }
     }
   });

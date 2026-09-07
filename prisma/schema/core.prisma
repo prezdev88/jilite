@@ -14,8 +14,7 @@ model Project {
   code           String   @unique
   nextTaskNumber Int      @default(0)
   description    String?
-  sprints        Sprint[]
-  columns        Column[]
+  statuses       Status[]
   tasks          Task[]
   labels         Label[]
   plugins        ProjectPlugin[]
@@ -31,6 +30,16 @@ model ProjectPlugin {
   @@unique([projectId, pluginId])
 }
 
+// Estados del flujo de trabajo (Core Statuses)
+model Status {
+  id        String  @id @default(cuid())
+  name      String
+  order     Int     @default(0)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+}
+
 model Task {
   id     String  @id @default(cuid())
   number Int
@@ -40,11 +49,9 @@ model Task {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  sprintId String?
-  sprint   Sprint? @relation(fields: [sprintId], references: [id])
-
-  columnId String?
-  column   Column? @relation(fields: [columnId], references: [id])
+  statusId String?
+  status   Status? @relation(fields: [statusId], references: [id])
+  
   labels   Label[]
 
   order Int @default(0)

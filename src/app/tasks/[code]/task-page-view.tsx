@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Project, Column, Label } from '@prisma/client';
+import type { Project, Status, Label } from '@prisma/client';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { TaskDetails } from '@/components/task-details';
-import { ColumnStatus } from '@/plugins/kanban/components/column-status';
+import { KanbanStatus } from '@/plugins/kanban/components/kanban-status';
 import { Button } from '@/components/ui/button';
 import type { TaskWithLabels } from '@/lib/task-types';
 
-type TaskWithContext = TaskWithLabels & { project: Project; column: Column | null };
+type TaskWithContext = TaskWithLabels & { project: Project; status: Status | null };
 
 export default function TaskPageView({ task: initialTask, availableLabels }: { task: TaskWithContext; availableLabels: Label[] }) {
   const [task, setTask] = useState(initialTask);
@@ -40,7 +40,7 @@ export default function TaskPageView({ task: initialTask, availableLabels }: { t
     <div className="task-page">
       <Link className="task-back-link" href={`/projects/${task.projectId}`}><ArrowLeft size={15} /> {task.project.name}</Link>
       <header className="task-page-heading">
-        <div className="task-page-meta"><span className="entity-code">{task.project.code}-{task.number}</span><ColumnStatus column={task.column} /></div>
+        <div className="task-page-meta"><span className="entity-code">{task.project.code}-{task.number}</span><KanbanStatus status={task.status} /></div>
         <h1>{task.title}</h1>
       </header>
       <TaskDetails task={task} availableLabels={labels} disabled={deleting} onBusyChange={setSaving} onLabelCreated={label => {

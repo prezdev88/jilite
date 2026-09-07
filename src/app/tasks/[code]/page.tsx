@@ -12,7 +12,7 @@ export default async function TaskPage({ params }: { params: { code: string } })
     where: { number: Number(match[2]), project: { code: match[1] } },
     include: {
       project: true,
-      column: true,
+      status: true,
       labels: { orderBy: { name: 'asc' } },
     },
   });
