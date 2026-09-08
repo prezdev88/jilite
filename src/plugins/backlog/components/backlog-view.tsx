@@ -285,7 +285,7 @@ export default function BacklogView({ project }: { project: BoardProject }) {
       </div>
 
       <Dialog open={!!selectedTask} onOpenChange={open => { if (!open && !pending) setSelectedTask(null); }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="task-detail-dialog">
           <DialogHeader>
             <DialogDescription className="flex items-center gap-2">
               <Link className="entity-code" href={`/tasks/${project.code}-${selectedTask?.number}`}>{project.code}-{selectedTask?.number}</Link>

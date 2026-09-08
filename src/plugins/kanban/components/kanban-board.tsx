@@ -3,8 +3,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import type { Status, Label, Project } from '@prisma/client';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { TaskDetails } from '@/components/task-details';
 import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
@@ -13,12 +12,12 @@ import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { moveBoardTask } from '@/lib/kanban-ordering';
 import type { TaskWithLabels } from '@/lib/task-types';
 
 type BoardProject = Project & { statuses: Status[]; labels: Label[]; tasks: TaskWithLabels[] };
 
 export default function KanbanBoard({ project }: { project: BoardProject }) {
-  const router = useRouter();
   const [statuses, setStatuses] = useState(project.statuses);
   const [labels, setLabels] = useState(project.labels);
   const [tasks, setTasks] = useState(project.tasks);
@@ -69,19 +68,27 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
   }
 
   async function onDragEnd({ source, destination, draggableId }: DropResult) {
-    if (!destination || pending || hasActiveFilters) return;
+    if (!destination || pending) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
     const previousTasks = tasks;
-    const movedTask = tasks.find(task => task.id === draggableId);
-    if (!movedTask) return;
-    const destinationTasks = tasks.filter(task => task.statusId === destination.droppableId && task.id !== draggableId);
-    destinationTasks.splice(destination.index, 0, { ...movedTask, statusId: destination.droppableId });
-    const remainingTasks = tasks.filter(task => task.statusId !== destination.droppableId && task.id !== draggableId);
-    setTasks([...remainingTasks, ...destinationTasks.map((task, order) => ({ ...task, order }))]);
+    const visibleTaskIds = new Set(tasks.filter(matchesFilters).map(task => task.id));
+    const move = moveBoardTask(
+      tasks,
+      draggableId,
+      destination.droppableId,
+      destination.index,
+      visibleTaskIds,
+    );
+    if (!move) return;
+    setTasks(move.tasks);
     setPending(true);
     setError('');
     try {
-      await request('/api/v1/tasks/move', 'POST', { taskId: draggableId, newStatusId: destination.droppableId, newOrder: destination.index });
+      await request('/api/v1/tasks/move', 'POST', {
+        taskId: draggableId,
+        newStatusId: destination.droppableId,
+        newOrder: move.destinationOrder,
+      });
     } catch {
       setTasks(previousTasks);
       setError('No pudimos mover la tarea. Inténtalo de nuevo.');
@@ -175,7 +182,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
         </div>
       )}
       {error && !selectedTask && <p role="alert" className="error-message">{error}</p>}
-      {hasActiveFilters && <p className="board-hint">Se muestran las tareas que coinciden con todos los filtros. Límpialos para volver a mover las tarjetas.</p>}
+      {hasActiveFilters && <p className="board-hint">Se muestran las tareas que coinciden con todos los filtros. Puedes moverlas sin alterar el orden relativo de las tareas ocultas.</p>}
       {!isMounted ? <div className="board-loading" role="status">Preparando tu tablero…</div> : (
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="kanban-scroll">
@@ -185,11 +192,11 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
               return (
                 <section key={status.id} className="kanban-board-column" aria-label={status.name}>
                   <div className="status-heading"><h2><TaskStatus status={status} /></h2><span className="count-badge">{hasActiveFilters ? visibleTasks.length + '/' : ''}{statusTasks.length}</span></div>
-                  <Droppable droppableId={status.id} isDropDisabled={hasActiveFilters || pending}>
+                  <Droppable droppableId={status.id} isDropDisabled={pending}>
                     {(provided, snapshot) => (
                       <div {...provided.droppableProps} ref={provided.innerRef} className={'task-dropzone' + (snapshot.isDraggingOver ? ' dragging-over' : '')}>
                         {visibleTasks.map((task, index) => (
-                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={hasActiveFilters || pending}>
+                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={pending}>
                             {(provided, snapshot) => (
                               <article
                                 ref={provided.innerRef}
@@ -242,7 +249,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
         </DragDropContext>
       )}
       <Dialog open={!!selectedTask} onOpenChange={open => { if (!open && !pending) setSelectedTask(null); }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="task-detail-dialog">
           <DialogHeader>
             <DialogDescription className="flex items-center gap-2">
               <Link className="entity-code" href={`/tasks/${project.code}-${selectedTask?.number}`}>
@@ -287,7 +294,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Eliminar tarea</DialogTitle>
-            <DialogDescription>¿Estás seguro de que quieres eliminar la tarea "{selectedTask?.title}"? Esta acción no se puede deshacer.</DialogDescription>
+            <DialogDescription>¿Estás seguro de que quieres eliminar la tarea &quot;{selectedTask?.title}&quot;? Esta acción no se puede deshacer.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" disabled={pending} onClick={() => setIsConfirmingDelete(false)}>Cancelar</Button>
