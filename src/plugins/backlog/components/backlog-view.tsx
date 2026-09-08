@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Tag, Search, X } from 'lucide-react';
-import { Project, Status, Task, Label } from '@prisma/client';
+import { Plus, Trash2, Search, X } from 'lucide-react';
+import { Project, Status, Label } from '@prisma/client';
 import { TaskWithLabels } from '@/lib/task-types';
 import { TaskDetails } from '@/components/task-details';
 import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
@@ -12,7 +12,6 @@ import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import dynamic from 'next/dynamic';
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
 
@@ -38,6 +37,31 @@ export default function BacklogView({ project }: { project: BoardProject }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const lastSyncedTasks = useRef(project.tasks);
+  const lastSyncedLabels = useRef(project.labels);
+
+  useEffect(() => {
+    if (pending || creatingLabel) {
+      return;
+    }
+
+    if (lastSyncedTasks.current !== project.tasks) {
+      setTasks(project.tasks);
+      setSelectedTask(current => {
+        if (!current) {
+          return null;
+        }
+
+        return project.tasks.find(task => task.id === current.id) || null;
+      });
+      lastSyncedTasks.current = project.tasks;
+    }
+
+    if (lastSyncedLabels.current !== project.labels) {
+      setLabels(project.labels);
+      lastSyncedLabels.current = project.labels;
+    }
+  }, [creatingLabel, pending, project.labels, project.tasks]);
 
   
   async function createLabels() {
@@ -113,7 +137,9 @@ export default function BacklogView({ project }: { project: BoardProject }) {
         setError(result.error || 'Hubo un error al crear la tarea.');
         return;
       }
-      setTasks([...tasks, result]);
+      setTasks(current => current.some(task => task.id === result.id)
+        ? current.map(task => task.id === result.id ? result : task)
+        : [...current, result]);
       resetForm();
     } catch {
       setError('Error de red al crear la tarea.');
@@ -296,6 +322,8 @@ export default function BacklogView({ project }: { project: BoardProject }) {
                   statuses={project.statuses} 
                   onChange={async (newStatusId) => {
                     const previousTasks = tasks;
+                    setPending(true);
+                    setError('');
                     setTasks(current => current.map(t => t.id === selectedTask.id ? { ...t, statusId: newStatusId, status: project.statuses.find(s => s.id === newStatusId) || null } : t));
                     setSelectedTask(current => current ? { ...current, statusId: newStatusId, status: project.statuses.find(s => s.id === newStatusId) || null } : null);
                     try {
@@ -308,6 +336,8 @@ export default function BacklogView({ project }: { project: BoardProject }) {
                       setTasks(previousTasks);
                       setSelectedTask(previousTasks.find(t => t.id === selectedTask.id) || null);
                       setError('No pudimos mover la tarea.');
+                    } finally {
+                      setPending(false);
                     }
                   }} 
                   disabled={pending} 
@@ -347,7 +377,7 @@ export default function BacklogView({ project }: { project: BoardProject }) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Eliminar tarea</DialogTitle>
-            <DialogDescription>¿Estás seguro de que quieres eliminar la tarea "{selectedTask?.title}"? Esta acción no se puede deshacer.</DialogDescription>
+            <DialogDescription>¿Estás seguro de que quieres eliminar la tarea &quot;{selectedTask?.title}&quot;? Esta acción no se puede deshacer.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" disabled={pending} onClick={() => setIsConfirmingDelete(false)}>Cancelar</Button>
