@@ -1,9 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
+import type { PluginManifest } from '@/plugin-sdk/manifest';
 
-export interface JilitePlugin {
-  /** Un identificador único para el plugin, ej: jilite.kanban */
-  id: string;
-  
+export interface JilitePlugin extends PluginManifest {
   /** Nombre visible del plugin */
   name: string;
   

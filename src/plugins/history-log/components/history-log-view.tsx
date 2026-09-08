@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { historyLogManifest } from '../manifest';
 
 type EventLogEntry = {
   id: string;
@@ -100,7 +101,7 @@ export default function HistoryLogView({ project }: { project: HistoryLogProject
     if (filterTo) params.set('to', new Date(filterTo + 'T23:59:59').toISOString());
 
     try {
-      const res = await fetch(`/api/v1/plugins/jilite.history-log/events?${params}`);
+      const res = await fetch(`/api/v1/plugins/${historyLogManifest.id}/events?${params}`);
       const data = await res.json();
       setEvents(data.events || []);
       setTotal(data.total || 0);

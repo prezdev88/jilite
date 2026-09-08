@@ -1,9 +1,10 @@
 import type { ServerPluginContribution } from '@/plugin-sdk/server';
 import { historyLogHttpRoutes } from './api/events';
 import { historyLogEvents } from './events';
+import { historyLogManifest } from './manifest';
 
 export const historyLogServerPlugin = {
-  id: 'jilite.history-log',
+  id: historyLogManifest.id,
   events: historyLogEvents,
   http: historyLogHttpRoutes,
 } satisfies ServerPluginContribution;

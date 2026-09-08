@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { eventEmitter } from '@/lib/events';
+import { createDefaultProjectPlugins } from '@/lib/project-plugin-defaults';
+import { pluginManifestRegistry } from '@/plugins/manifest-registry';
 import { dispatchPluginEvent } from '@/plugins/server-runtime';
 
 export async function GET() {
@@ -23,6 +25,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Introduce un nombre y un código de tres letras (A–Z).' }, { status: 400 });
   }
   try {
+    const defaultPlugins = createDefaultProjectPlugins(pluginManifestRegistry);
     const project = await prisma.project.create({
       data: {
         name,
@@ -35,11 +38,7 @@ export async function POST(req: Request) {
             { name: 'Terminado', order: 2 }
           ]
         },
-        plugins: {
-          create: [
-            { pluginId: 'jilite.backlog', isActive: true }
-          ]
-        }
+        ...(defaultPlugins.length > 0 ? { plugins: { create: defaultPlugins } } : {}),
       }
     });
     dispatchPluginEvent(project.id, 'project:created', { project });
