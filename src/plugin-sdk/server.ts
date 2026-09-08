@@ -27,9 +27,20 @@ export type PluginEventHandlers = {
   [Name in PluginEventName]?: PluginEventHandler<Name>;
 };
 
+export type PluginHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type PluginHttpHandler = (request: Request) => Promise<Response> | Response;
+
+export type PluginHttpRoute = {
+  path: string;
+  handlers: Partial<Record<PluginHttpMethod, PluginHttpHandler>>;
+  getProjectId?: (request: Request) => string | null;
+  requiresActivePlugin?: boolean;
+};
+
 export type ServerPluginContribution = {
   id: string;
   events?: PluginEventHandlers;
+  http?: ReadonlyArray<PluginHttpRoute>;
 };
 
 export type PluginEventDispatcher = <Name extends PluginEventName>(
@@ -50,3 +61,10 @@ export type PluginDispatchFailure =
       eventName: PluginEventName;
       pluginId: string;
     };
+
+export type PluginHttpDispatcher = (
+  pluginId: string,
+  path: string,
+  method: PluginHttpMethod,
+  request: Request,
+) => Promise<Response>;

@@ -62,6 +62,10 @@ async function upgrade(prisma) {
 module.exports = { upgrade };
 
 if (require.main === module) {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    datasources: process.env.DATABASE_URL
+      ? { db: { url: process.env.DATABASE_URL } }
+      : undefined,
+  });
   upgrade(prisma).catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());
 }

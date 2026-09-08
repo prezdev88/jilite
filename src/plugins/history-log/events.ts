@@ -4,7 +4,6 @@ import type {
   PluginEventHandlers,
   PluginEventName,
   PluginEventPayload,
-  ServerPluginContribution,
 } from '@/plugin-sdk/server';
 
 function createHandler<Name extends PluginEventName>(eventName: Name): PluginEventHandler<Name> {
@@ -52,8 +51,3 @@ export const historyLogEvents = {
   'plugin:activated': createHandler('plugin:activated'),
   'plugin:deactivated': createHandler('plugin:deactivated'),
 } satisfies PluginEventHandlers;
-
-export const historyLogServerPlugin = {
-  id: 'jilite.history-log',
-  events: historyLogEvents,
-} satisfies ServerPluginContribution;

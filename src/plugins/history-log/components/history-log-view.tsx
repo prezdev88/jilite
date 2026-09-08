@@ -10,7 +10,11 @@ type EventLogEntry = {
   createdAt: string;
   projectId: string;
   event: string;
-  payload: any;
+  payload: unknown;
+};
+
+type HistoryLogProject = {
+  id: string;
 };
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
@@ -32,34 +36,52 @@ function formatDate(iso: string) {
     ' ' + d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function summarize(event: string, payload: any): string {
+function summarize(event: string, payload: unknown): string {
   switch (event) {
     case 'task:created':
-      return `Se creó la tarea "${payload.task?.title || '?'}" (#${payload.task?.number || '?'})`;
+      return `Se creó la tarea "${nestedValue(payload, 'task', 'title')}" (#${nestedValue(payload, 'task', 'number')})`;
     case 'task:updated':
-      return `Se editó la tarea "${payload.task?.title || '?'}" (#${payload.task?.number || '?'})`;
+      return `Se editó la tarea "${nestedValue(payload, 'task', 'title')}" (#${nestedValue(payload, 'task', 'number')})`;
     case 'task:deleted':
-      return `Se eliminó la tarea "${payload.task?.title || '?'}" (#${payload.task?.number || '?'})`;
+      return `Se eliminó la tarea "${nestedValue(payload, 'task', 'title')}" (#${nestedValue(payload, 'task', 'number')})`;
     case 'task:status_changed':
-      return `Tarea #${payload.taskNumber || '?'} cambió de estado`;
+      return `Tarea #${value(payload, 'taskNumber')} cambió de estado`;
     case 'project:created':
-      return `Se creó el proyecto "${payload.project?.name || '?'}"`;
+      return `Se creó el proyecto "${nestedValue(payload, 'project', 'name')}"`;
     case 'project:updated':
-      return `Se editó el proyecto "${payload.project?.name || '?'}"`;
+      return `Se editó el proyecto "${nestedValue(payload, 'project', 'name')}"`;
     case 'label:created':
-      return `Se creó la etiqueta "${payload.label?.name || '?'}"`;
+      return `Se creó la etiqueta "${nestedValue(payload, 'label', 'name')}"`;
     case 'status:created':
-      return `Se creó el estado "${payload.status?.name || '?'}"`;
+      return `Se creó el estado "${nestedValue(payload, 'status', 'name')}"`;
     case 'plugin:activated':
-      return `Se activó el plugin "${payload.plugin?.pluginId || '?'}"`;
+      return `Se activó el plugin "${nestedValue(payload, 'plugin', 'pluginId')}"`;
     case 'plugin:deactivated':
-      return `Se desactivó el plugin "${payload.plugin?.pluginId || '?'}"`;
+      return `Se desactivó el plugin "${nestedValue(payload, 'plugin', 'pluginId')}"`;
     default:
       return event;
   }
 }
 
-export default function HistoryLogView({ project }: { project: any }) {
+function nestedValue(payload: unknown, container: string, property: string) {
+  if (!isRecord(payload) || !isRecord(payload[container])) return '?';
+  return printableValue(payload[container][property]);
+}
+
+function value(payload: unknown, property: string) {
+  if (!isRecord(payload)) return '?';
+  return printableValue(payload[property]);
+}
+
+function printableValue(value: unknown) {
+  return typeof value === 'string' || typeof value === 'number' ? value : '?';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+export default function HistoryLogView({ project }: { project: HistoryLogProject }) {
   const [events, setEvents] = useState<EventLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -78,7 +100,7 @@ export default function HistoryLogView({ project }: { project: any }) {
     if (filterTo) params.set('to', new Date(filterTo + 'T23:59:59').toISOString());
 
     try {
-      const res = await fetch(`/api/v1/events?${params}`);
+      const res = await fetch(`/api/v1/plugins/jilite.history-log/events?${params}`);
       const data = await res.json();
       setEvents(data.events || []);
       setTotal(data.total || 0);

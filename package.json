@@ -7,7 +7,7 @@
     "build": "node scripts/gather-plugin-schemas.mjs && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "db:upgrade": "node scripts/gather-plugin-schemas.mjs && node scripts/backfill-project-codes.cjs && prisma db push"
+    "db:upgrade": "node scripts/gather-plugin-schemas.mjs && node scripts/backfill-project-codes.cjs && node scripts/run-plugin-upgrades.cjs && prisma db push"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

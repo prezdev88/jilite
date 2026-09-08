@@ -1,5 +1,6 @@
 import { eventEmitter } from '@/lib/events';
 import { createPluginEventDispatcher } from '@/lib/plugin-events';
+import { createPluginHttpDispatcher } from '@/lib/plugin-http';
 import { prisma } from '@/lib/prisma';
 import { serverPluginContributions } from './server-registry';
 
@@ -24,5 +25,19 @@ export const dispatchPluginEvent = createPluginEventDispatcher({
       return;
     }
     console.error('Error dispatching plugin event:', error);
+  },
+});
+
+export const dispatchPluginHttpRequest = createPluginHttpDispatcher({
+  plugins: serverPluginContributions,
+  isPluginActive: async (projectId, pluginId) => {
+    const plugin = await prisma.projectPlugin.findUnique({
+      where: { projectId_pluginId: { projectId, pluginId } },
+      select: { isActive: true },
+    });
+    return plugin?.isActive === true;
+  },
+  reportError: (error, pluginId, path) => {
+    console.error(`Failed dispatching ${pluginId}/${path}:`, error);
   },
 });

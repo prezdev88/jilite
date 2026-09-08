@@ -2,7 +2,6 @@ model EventLog {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   event     String   // e.g. "task:created", "task:deleted"
   payload   String   // JSON string with event details
 

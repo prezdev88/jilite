@@ -37,3 +37,6 @@ next-env.d.ts
 
 *.db
 *.db-journal
+
+# generated from plugin-owned Prisma schemas
+/prisma/schema/plugins/

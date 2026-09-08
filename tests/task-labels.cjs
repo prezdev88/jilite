@@ -11,9 +11,13 @@ test('assigns multiple colored labels to a task and replaces its selection', asy
   const directory = mkdtempSync(join(tmpdir(), 'jilite-labels-test-'));
   const schemaPath = join(directory, 'schema.prisma');
   const databasePath = join(directory, 'dev.db');
-  writeFileSync(schemaPath, readFileSync(join(projectRoot, 'prisma/schema.prisma'), 'utf8'));
+  writeFileSync(
+    schemaPath,
+    readFileSync(join(projectRoot, 'prisma/schema/core.prisma'), 'utf8'),
+  );
   execFileSync(join(projectRoot, 'node_modules/.bin/prisma'), ['db', 'push', '--schema', schemaPath, '--skip-generate'], {
     cwd: projectRoot,
+    env: { ...process.env, DATABASE_URL: `file:${databasePath}` },
     stdio: 'ignore',
   });
 
@@ -22,7 +26,7 @@ test('assigns multiple colored labels to a task and replaces its selection', asy
     const project = await prisma.project.create({
       data: { name: 'Labels', code: 'LBL' },
     });
-    const column = await prisma.column.create({
+    const status = await prisma.status.create({
       data: { name: 'To do', order: 0, projectId: project.id },
     });
     const urgent = await prisma.label.create({
@@ -36,7 +40,7 @@ test('assigns multiple colored labels to a task and replaces its selection', asy
         title: 'Implement labels',
         number: 1,
         projectId: project.id,
-        columnId: column.id,
+        statusId: status.id,
         labels: { connect: [{ id: urgent.id }, { id: backend.id }] },
       },
       include: { labels: true },
