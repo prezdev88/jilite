@@ -5,14 +5,16 @@ import type { Status, Label, Project } from '@prisma/client';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
+import { LabelFilterCombobox } from '@/components/label-filter-combobox';
 import { TaskDetails } from '@/components/task-details';
-import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
+import { TaskLabels } from '@/components/task-labels';
 import { TaskStatus } from '@/components/task-status';
 import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { moveBoardTask } from '@/lib/kanban-ordering';
+import { matchesTaskFilters } from '@/lib/task-filtering';
 import type { TaskWithLabels } from '@/lib/task-types';
 
 type BoardProject = Project & { statuses: Status[]; labels: Label[]; tasks: TaskWithLabels[] };
@@ -39,24 +41,17 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
     setTasks(project.tasks);
     setStatuses(project.statuses);
     setLabels(project.labels);
+    setActiveLabelIds(current => current.filter(labelId =>
+      project.labels.some(label => label.id === labelId),
+    ));
     
   }, [project.tasks, project.statuses, project.labels, project.name]);
 
-  const hasActiveFilters = !!query || activeLabelIds.length > 0;
+  const hasActiveFilters = !!query.trim() || activeLabelIds.length > 0;
 
   function matchesFilters(task: TaskWithLabels) {
-    const matchesQuery = `${project.code}-${task.number} ${task.title}`.toLocaleLowerCase('es')
-      .includes(query.toLocaleLowerCase('es'));
-    const matchesLabels = activeLabelIds.every(labelId => task.labels.some(label => label.id === labelId));
-    return matchesQuery && matchesLabels;
+    return matchesTaskFilters(task, project.code, query, activeLabelIds);
   }
-
-  function toggleLabelFilter(labelId: string) {
-    setActiveLabelIds(current => current.includes(labelId)
-      ? current.filter(id => id !== labelId)
-      : [...current, labelId]);
-  }
-
 
   async function request(url: string, method: string, body?: object) {
     const response = await fetch(url, {
@@ -160,24 +155,7 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
       {labels.length > 0 && (
         <div className="label-filter-bar">
           <span className="label-filter-title"><Tag size={14} /> Filtrar por etiquetas</span>
-          <div className="label-filter-options">
-            {labels.map(label => {
-              const active = activeLabelIds.includes(label.id);
-              return (
-                <button
-                  className={`label-filter${active ? ' active' : ''}`}
-                  style={taskLabelStyle(label.color)}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => toggleLabelFilter(label.id)}
-                  key={label.id}
-                >
-                  <span className="task-label-dot" aria-hidden="true" />
-                  {label.name}
-                </button>
-              );
-            })}
-          </div>
+          <LabelFilterCombobox labels={labels} value={activeLabelIds} onChange={setActiveLabelIds} />
           {activeLabelIds.length > 0 && <button className="clear-label-filters" type="button" onClick={() => setActiveLabelIds([])}><X size={13} /> Limpiar</button>}
         </div>
       )}

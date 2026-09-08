@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Search, X } from 'lucide-react';
+import { Plus, Trash2, Search, Tag, X } from 'lucide-react';
 import { Project, Status, Label } from '@prisma/client';
+import { matchesTaskFilters } from '@/lib/task-filtering';
 import { TaskWithLabels } from '@/lib/task-types';
 import { TaskDetails } from '@/components/task-details';
+import { LabelFilterCombobox } from '@/components/label-filter-combobox';
 import { TaskLabels, taskLabelStyle } from '@/components/task-labels';
 import { automaticLabelColor, labelNameKey, normalizeLabelName, parseLabelNames } from '@/lib/labels';
 import { TaskStatusSelector } from '@/components/task-status-selector';
@@ -27,6 +29,7 @@ export default function BacklogView({ project }: { project: BoardProject }) {
   const [selectedTask, setSelectedTask] = useState<TaskWithLabels | null>(null);
   
   const [query, setQuery] = useState('');
+  const [activeLabelIds, setActiveLabelIds] = useState<string[]>([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDetail, setNewTaskDetail] = useState('');
@@ -59,6 +62,9 @@ export default function BacklogView({ project }: { project: BoardProject }) {
 
     if (lastSyncedLabels.current !== project.labels) {
       setLabels(project.labels);
+      setActiveLabelIds(current => current.filter(labelId =>
+        project.labels.some(label => label.id === labelId),
+      ));
       lastSyncedLabels.current = project.labels;
     }
   }, [creatingLabel, pending, project.labels, project.tasks]);
@@ -163,9 +169,10 @@ export default function BacklogView({ project }: { project: BoardProject }) {
     }
   }
 
-  const visibleTasks = tasks.filter(task => 
-    !query || task.title.toLowerCase().includes(query.toLowerCase()) || 
-    task.number.toString().includes(query)
+  const hasActiveFilters = !!query.trim() || activeLabelIds.length > 0;
+
+  const visibleTasks = tasks.filter(task =>
+    matchesTaskFilters(task, project.code, query, activeLabelIds),
   );
 
   return (
@@ -175,13 +182,26 @@ export default function BacklogView({ project }: { project: BoardProject }) {
           <Button disabled={pending} onClick={() => setIsAddingTask(true)}>
             <Plus size={16} /> Nueva tarea
           </Button>
-          <span className="board-summary">{tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}</span>
+          <span className="board-summary">{hasActiveFilters ? `${visibleTasks.length} de ` : ''}{tasks.length} {tasks.length === 1 ? 'tarea' : 'tareas'}</span>
         </div>
         <div className="search-field">
           <Search size={16} />
           <input aria-label="Buscar tareas" placeholder="Buscar tareas…" value={query} onChange={e => setQuery(e.target.value)} />
+          {query && <button type="button" aria-label="Limpiar búsqueda" onClick={() => setQuery('')}><X size={14} /></button>}
         </div>
       </div>
+
+      {labels.length > 0 && (
+        <div className="label-filter-bar">
+          <span className="label-filter-title"><Tag size={14} /> Filtrar por etiquetas</span>
+          <LabelFilterCombobox labels={labels} value={activeLabelIds} onChange={setActiveLabelIds} />
+          {activeLabelIds.length > 0 && (
+            <button className="clear-label-filters" type="button" onClick={() => setActiveLabelIds([])}>
+              <X size={13} /> Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto pr-2">
         {isAddingTask && (
@@ -304,7 +324,9 @@ export default function BacklogView({ project }: { project: BoardProject }) {
           
           {visibleTasks.length === 0 && !isAddingTask && (
             <div className="text-center p-10 text-gray-500 text-sm border border-dashed border-[#2e2e35] rounded-md">
-              No hay tareas en el backlog.
+              {hasActiveFilters
+                ? 'No hay tareas que coincidan con la búsqueda y los filtros seleccionados.'
+                : 'No hay tareas en el backlog.'}
             </div>
           )}
         </div>

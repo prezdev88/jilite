@@ -125,6 +125,27 @@
   .label-filter.active, .label-option.selected { color: #f2f2f5; border-color: color-mix(in srgb, var(--task-label-color) 75%, #57575f); background: color-mix(in srgb, var(--task-label-color) 18%, #17171a); }
   .clear-label-filters { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; padding: 5px 7px; border-radius: 5px; color: #9999a4; font-size: 11px; }
   .clear-label-filters:hover { background: #202025; color: #dedee5; }
+  .label-filter-combobox { flex: 1 1 320px; min-width: 220px; max-width: 560px; }
+  .label-filter-combobox-input-group { display: flex; align-items: center; min-height: 36px; padding: 4px 5px 4px 10px; border: 1px solid #34343a; border-radius: 7px; background: #17171a; color: #9898a3; }
+  .label-filter-combobox-input-group:focus-within { border-color: #646470; outline: 2px solid hsl(var(--ring)); outline-offset: 1px; }
+  .label-filter-combobox-search { flex-shrink: 0; margin-right: 7px; }
+  .label-filter-combobox-chips { display: flex; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0; gap: 5px; }
+  .label-filter-combobox-chip { min-height: 24px; padding-right: 3px; color: #d5d5dc; }
+  .label-filter-combobox-chip-remove { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 1px; border-radius: 50%; color: inherit; }
+  .label-filter-combobox-chip-remove:hover, .label-filter-combobox-chip-remove:focus-visible { background: color-mix(in srgb, var(--task-label-color) 30%, #222228); outline: none; }
+  .label-filter-combobox-input { flex: 1; min-width: 110px; height: 24px; border: 0; background: transparent; color: #dfdfe6; font-size: 12px; outline: none; }
+  .label-filter-combobox-input::placeholder { color: #858590; }
+  .label-filter-combobox-trigger { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 5px; color: #9b9ba6; }
+  .label-filter-combobox-trigger:hover { background: #242429; color: #e1e1e7; }
+  .label-filter-combobox-positioner { z-index: 70; outline: none; }
+  .label-filter-combobox-popup { width: var(--anchor-width); max-width: var(--available-width); border: 1px solid #3a3a42; border-radius: 7px; background: #19191d; box-shadow: 0 14px 36px #0009; color: #dddde4; transform-origin: var(--transform-origin); transition: opacity .12s, transform .12s; }
+  .label-filter-combobox-popup[data-starting-style], .label-filter-combobox-popup[data-ending-style] { opacity: 0; transform: scale(.97); }
+  .label-filter-combobox-list { max-height: min(280px, var(--available-height)); overflow-y: auto; overscroll-behavior: contain; padding: 5px; outline: none; scrollbar-color: #414149 transparent; scrollbar-width: thin; }
+  .label-filter-combobox-option { display: grid; grid-template-columns: 16px 8px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 34px; padding: 6px 8px; border-radius: 5px; color: #c7c7cf; font-size: 12px; outline: none; cursor: default; }
+  .label-filter-combobox-option[data-highlighted] { background: color-mix(in srgb, var(--task-label-color) 14%, #26262c); color: #f2f2f5; }
+  .label-filter-combobox-option[data-selected] { color: color-mix(in srgb, var(--task-label-color) 48%, #f2f2f5); }
+  .label-filter-combobox-indicator { display: inline-flex; align-items: center; color: var(--task-label-color); }
+  .label-filter-combobox-empty { padding: 16px 12px; color: #92929d; font-size: 12px; text-align: center; }
   .board-hint { font-size: 12px; color: #a0a0aa; margin-bottom: 20px; line-height: 1.7; }
   .kanban-scroll { display: flex; align-items: flex-start; gap: 24px; overflow-x: auto; min-height: 360px; padding: 2px 2px 25px; scrollbar-color: #3d3d45 transparent; scrollbar-width: thin; }
   .kanban-board-column { flex: 1 0 265px; max-width: 360px; min-width: 0; }
@@ -228,6 +249,7 @@
   .page-heading [data-slot="button"] { font-size: 12px; min-height: 37px; }
   .label-filter-bar { align-items: flex-start; flex-wrap: wrap; }
   .label-filter-options { order: 3; width: 100%; }
+  .label-filter-combobox { order: 3; width: 100%; min-width: 0; max-width: none; }
   .label-create-row { grid-template-columns: 1fr; }
 }
 
