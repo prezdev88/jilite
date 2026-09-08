@@ -1,27 +1,16 @@
 import { prisma } from '@/lib/prisma';
+import type {
+  PluginEventHandler,
+  PluginEventHandlers,
+  PluginEventName,
+  PluginEventPayload,
+  ServerPluginContribution,
+} from '@/plugin-sdk/server';
 
-const ALL_EVENTS = [
-  'task:created',
-  'task:updated',
-  'task:deleted',
-  'task:status_changed',
-  'project:created',
-  'project:updated',
-  'label:created',
-  'status:created',
-  'plugin:activated',
-  'plugin:deactivated',
-];
-
-function createHandler(eventName: string) {
-  return async (payload: any) => {
+function createHandler<Name extends PluginEventName>(eventName: Name): PluginEventHandler<Name> {
+  return async payload => {
     try {
-      const projectId = payload.projectId
-        || payload.task?.projectId
-        || payload.project?.id
-        || payload.label?.projectId
-        || payload.status?.projectId
-        || payload.plugin?.projectId;
+      const projectId = getProjectId(payload);
 
       if (!projectId) {
         console.warn(`[history-log] No projectId found for event ${eventName}`);
@@ -41,8 +30,30 @@ function createHandler(eventName: string) {
   };
 }
 
-/** Server-side event handlers map for history-log plugin */
-export const historyLogEvents: Record<string, (payload: any) => Promise<void>> = {};
-for (const eventName of ALL_EVENTS) {
-  historyLogEvents[eventName] = createHandler(eventName);
+function getProjectId(payload: PluginEventPayload) {
+  if ('projectId' in payload) return payload.projectId;
+  if ('task' in payload) return payload.task.projectId;
+  if ('project' in payload) return payload.project.id;
+  if ('label' in payload) return payload.label.projectId;
+  if ('status' in payload) return payload.status.projectId;
+  if ('plugin' in payload) return payload.plugin.projectId;
+  return null;
 }
+
+export const historyLogEvents = {
+  'task:created': createHandler('task:created'),
+  'task:updated': createHandler('task:updated'),
+  'task:deleted': createHandler('task:deleted'),
+  'task:status_changed': createHandler('task:status_changed'),
+  'project:created': createHandler('project:created'),
+  'project:updated': createHandler('project:updated'),
+  'label:created': createHandler('label:created'),
+  'status:created': createHandler('status:created'),
+  'plugin:activated': createHandler('plugin:activated'),
+  'plugin:deactivated': createHandler('plugin:deactivated'),
+} satisfies PluginEventHandlers;
+
+export const historyLogServerPlugin = {
+  id: 'jilite.history-log',
+  events: historyLogEvents,
+} satisfies ServerPluginContribution;

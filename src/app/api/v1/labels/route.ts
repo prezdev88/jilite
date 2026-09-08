@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { automaticLabelColor, labelNameKey, parseLabelNames } from '@/lib/labels';
 import { eventEmitter } from '@/lib/events';
-import { dispatchPluginEvent } from '@/lib/plugin-events';
+import { dispatchPluginEvent } from '@/plugins/server-runtime';
 
 const MAX_LABELS_PER_REQUEST = 20;
 

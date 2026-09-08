@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { eventEmitter } from '@/lib/events';
-import { dispatchPluginEvent } from '@/lib/plugin-events';
+import { dispatchPluginEvent } from '@/plugins/server-runtime';
 
 export async function GET() {
   const projects = await prisma.project.findMany({

@@ -1,41 +1,55 @@
-import { eventEmitter } from './events';
-import { prisma } from './prisma';
-import { historyLogEvents } from '@/plugins/history-log/events';
+import type {
+  PluginDispatchFailure,
+  PluginEventDispatcher,
+  PluginEventHandler,
+  PluginEventName,
+  PluginEventPayloads,
+  ServerPluginContribution,
+} from '@/plugin-sdk/server';
 
-/**
- * Server-side event handler map.
- * Maps pluginId -> { eventName -> handler }.
- * These are loaded at module init, NOT from the client-side registry.
- */
-const serverEventHandlers: Record<string, Record<string, (payload: any) => Promise<void> | void>> = {
-  'jilite.history-log': historyLogEvents,
+type PluginEventDispatcherDependencies = {
+  plugins: ReadonlyArray<ServerPluginContribution>;
+  findActivePluginIds: (projectId: string) => Promise<ReadonlyArray<string>>;
+  publishCoreEvent: <Name extends PluginEventName>(
+    eventName: Name,
+    payload: PluginEventPayloads[Name],
+  ) => void;
+  reportError: (error: unknown, failure: PluginDispatchFailure) => void;
 };
 
-/**
- * Dispatches an event to the global event emitter AND
- * routes it to any active plugins in the project that listen to it.
- */
-export async function dispatchPluginEvent(projectId: string, eventName: string, payload: any) {
-  // Emit to local node emitter just in case core needs it
-  eventEmitter.emit(eventName, payload);
+export function createPluginEventDispatcher({
+  plugins,
+  findActivePluginIds,
+  publishCoreEvent,
+  reportError,
+}: PluginEventDispatcherDependencies): PluginEventDispatcher {
+  const pluginsById = new Map(plugins.map(plugin => [plugin.id, plugin]));
 
-  try {
-    // Find plugins active in this project
-    const activePlugins = await prisma.projectPlugin.findMany({
-      where: { projectId, isActive: true }
-    });
+  return async function dispatchPluginEvent<Name extends PluginEventName>(
+    projectId: string,
+    eventName: Name,
+    payload: PluginEventPayloads[Name],
+  ) {
+    publishCoreEvent(eventName, payload);
 
-    for (const active of activePlugins) {
-      const handlers = serverEventHandlers[active.pluginId];
-      if (handlers && typeof handlers[eventName] === 'function') {
+    let activePluginIds: ReadonlyArray<string>;
+    try {
+      activePluginIds = await findActivePluginIds(projectId);
+    } catch (error) {
+      reportError(error, { phase: 'active-plugin-lookup', projectId, eventName });
+      return;
+    }
+
+    for (const pluginId of activePluginIds) {
+      const plugin = pluginsById.get(pluginId);
+      const handler = plugin?.events?.[eventName] as PluginEventHandler<Name> | undefined;
+      if (handler) {
         try {
-          await handlers[eventName](payload);
-        } catch (pluginError) {
-          console.error(`Plugin ${active.pluginId} failed handling event ${eventName}:`, pluginError);
+          await handler(payload);
+        } catch (error) {
+          reportError(error, { phase: 'plugin-handler', projectId, eventName, pluginId });
         }
       }
     }
-  } catch (error) {
-    console.error('Error dispatching plugin event:', error);
-  }
+  };
 }

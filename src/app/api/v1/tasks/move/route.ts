@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { eventEmitter } from '@/lib/events';
-import { dispatchPluginEvent } from '@/lib/plugin-events';
+import { dispatchPluginEvent } from '@/plugins/server-runtime';
 
 export async function POST(req: Request) {
   const { taskId, newStatusId, newOrder } = await req.json();

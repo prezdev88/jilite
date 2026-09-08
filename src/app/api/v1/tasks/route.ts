@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { eventEmitter } from '@/lib/events';
-import { dispatchPluginEvent } from '@/lib/plugin-events';
+import { dispatchPluginEvent } from '@/plugins/server-runtime';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
