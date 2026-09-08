@@ -147,14 +147,14 @@
   .label-filter-combobox-indicator { display: inline-flex; align-items: center; color: var(--task-label-color); }
   .label-filter-combobox-empty { padding: 16px 12px; color: #92929d; font-size: 12px; text-align: center; }
   .board-hint { font-size: 12px; color: #a0a0aa; margin-bottom: 20px; line-height: 1.7; }
-  .kanban-scroll { display: flex; align-items: flex-start; gap: 24px; overflow-x: auto; min-height: 360px; padding: 2px 2px 25px; scrollbar-color: #3d3d45 transparent; scrollbar-width: thin; }
-  .kanban-board-column { flex: 1 0 265px; max-width: 360px; min-width: 0; }
+  .kanban-scroll { display: flex; align-items: stretch; gap: 24px; overflow-x: auto; min-height: 360px; padding: 2px 2px 25px; scrollbar-color: #3d3d45 transparent; scrollbar-width: thin; }
+  .kanban-board-column { display: flex; flex: 1 0 265px; flex-direction: column; max-width: 360px; min-width: 0; }
   .status-heading { display: flex; align-items: center; gap: 9px; padding: 0 4px 17px; }
   .status-heading h2 { font-size: 13px; font-weight: 500; color: #c8c8d1; overflow-wrap: anywhere; min-width: 0; }
   .status-badge { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
   .status-badge-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
   .count-badge { font-size: 11px; color: #83838e; font-variant-numeric: tabular-nums; }
-  .task-dropzone { min-height: 48px; border-radius: 7px; transition: background .15s; }
+  .task-dropzone { flex: 1 0 auto; min-height: 48px; border-radius: 7px; transition: background .15s; }
   .dragging-over { background: #24242c; outline: 1px dashed #575763; }
   .task-card-wrapper { display: block; margin-bottom: 9px; }
   .task-card { display: flex; align-items: flex-start; gap: 8px; padding: 16px 11px 16px 16px; background: #1b1b20; border: 1px solid #2e2e35; border-radius: 7px; transition: border-color .15s, transform .2s ease; }
@@ -172,7 +172,7 @@
   .add-status-button { flex: 0 0 116px; padding-top: 0; height: 27px; }
   .add-task-button:hover, .add-status-button:hover { background: #202025; color: #d5d5df; }
   .task-create-form, .status-create-form { display: flex; flex-direction: column; gap: 11px; padding: 14px; background: #1a1a1f; border: 1px solid #393941; border-radius: 8px; }
-  .status-create-form { flex: 0 0 280px; }
+  .status-create-form { align-self: flex-start; flex: 0 0 280px; }
   .task-create-form > label, .status-create-form > label { font-size: 12px; font-weight: 500; }
   .board-loading { padding: 65px 20px; color: #a0a0aa; font-size: 13px; text-align: center; }
 

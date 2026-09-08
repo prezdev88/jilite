@@ -207,16 +207,16 @@ export default function KanbanBoard({ project }: { project: BoardProject }) {
                         ))}
                         {provided.placeholder}
                         {!visibleTasks.length && !snapshot.isDraggingOver && <div className="status-empty">{hasActiveFilters ? 'Sin coincidencias' : 'Sin tareas'}</div>}
+                        {activeStatus === status.id ? (
+                          <form className="task-create-form" onSubmit={event => handleCreateTask(event, status.id)}>
+                            <label htmlFor={'task-title-' + status.id}>Nueva tarea</label>
+                            <Input id={'task-title-' + status.id} autoFocus placeholder="¿Qué hay que hacer?" value={newTaskTitle} onChange={event => setNewTaskTitle(event.target.value)} required />
+                            <div className="flex gap-2"><Button size="sm" type="submit" disabled={pending || !newTaskTitle.trim()}>{pending ? 'Guardando…' : 'Crear tarea'}</Button><Button size="sm" variant="ghost" disabled={pending} onClick={() => setActiveStatus(null)}>Cancelar</Button></div>
+                          </form>
+                        ) : <button className="add-task-button" disabled={pending} onClick={() => openTaskForm(status.id)}><Plus size={16} /> Añadir tarea</button>}
                       </div>
                     )}
                   </Droppable>
-                  {activeStatus === status.id ? (
-                    <form className="task-create-form" onSubmit={event => handleCreateTask(event, status.id)}>
-                      <label htmlFor={'task-title-' + status.id}>Nueva tarea</label>
-                      <Input id={'task-title-' + status.id} autoFocus placeholder="¿Qué hay que hacer?" value={newTaskTitle} onChange={event => setNewTaskTitle(event.target.value)} required />
-                      <div className="flex gap-2"><Button size="sm" type="submit" disabled={pending || !newTaskTitle.trim()}>{pending ? 'Guardando…' : 'Crear tarea'}</Button><Button size="sm" variant="ghost" disabled={pending} onClick={() => setActiveStatus(null)}>Cancelar</Button></div>
-                    </form>
-                  ) : <button className="add-task-button" disabled={pending} onClick={() => openTaskForm(status.id)}><Plus size={16} /> Añadir tarea</button>}
                 </section>
               );
             })}
