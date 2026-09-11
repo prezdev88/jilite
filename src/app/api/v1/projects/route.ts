@@ -55,21 +55,27 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const body = await req.json().catch(() => null);
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  const code = typeof body?.code === 'string' ? body.code.trim().toUpperCase() : '';
   const description = typeof body?.description === 'string' ? body.description.trim() : null;
-  if (typeof body?.id !== 'string' || !name || name.length > 120) {
-    return NextResponse.json({ error: 'Introduce un nombre de entre 1 y 120 caracteres.' }, { status: 400 });
+  if (typeof body?.id !== 'string' || !name || name.length > 120 || !/^[A-Z]{3}$/.test(code)) {
+    return NextResponse.json({ error: 'Introduce un nombre válido y un código de 3 letras.' }, { status: 400 });
   }
   try {
     const project = await prisma.project.update({ 
       where: { id: body.id }, 
-      data: { name, description } 
+      data: { name, code, description } 
     });
     dispatchPluginEvent(project.id, 'project:updated', { project });
     eventEmitter.emit('update');
     return NextResponse.json(project);
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'El proyecto ya no existe.' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return NextResponse.json({ error: 'Ese código ya pertenece a otro proyecto.' }, { status: 409 });
+      }
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'El proyecto ya no existe.' }, { status: 404 });
+      }
     }
     throw error;
   }

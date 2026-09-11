@@ -34,8 +34,10 @@ export function ProjectView({ project }: { project: BoardProject }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [pending, setPending] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
+  const [projectCode, setProjectCode] = useState(project.code);
   const [projectDescription, setProjectDescription] = useState(project.description || '');
   const [displayedProjectName, setDisplayedProjectName] = useState(project.name);
+  const [displayedProjectCode, setDisplayedProjectCode] = useState(project.code);
   const [displayedProjectDescription, setDisplayedProjectDescription] = useState(project.description || '');
   const [renameError, setRenameError] = useState('');
 
@@ -63,22 +65,26 @@ export function ProjectView({ project }: { project: BoardProject }) {
 
   async function renameProject(event: React.FormEvent) {
     event.preventDefault();
-    if (pending || !projectName.trim()) return;
+    if (pending || !projectName.trim() || !projectCode.trim()) return;
     setPending(true);
     setRenameError('');
     try {
       const response = await fetch('/api/v1/projects', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: project.id, name: projectName.trim(), description: projectDescription.trim() || null })
+        body: JSON.stringify({ id: project.id, name: projectName.trim(), code: projectCode.trim().toUpperCase(), description: projectDescription.trim() || null })
       });
-      if (!response.ok) throw new Error();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'No se pudo guardar el proyecto. Inténtalo de nuevo.');
+      }
       const updated = await response.json();
       setDisplayedProjectName(updated.name);
+      setDisplayedProjectCode(updated.code);
       setDisplayedProjectDescription(updated.description || '');
       setIsRenaming(false);
-    } catch {
-      setRenameError('No se pudo guardar el proyecto. Inténtalo de nuevo.');
+    } catch (error: any) {
+      setRenameError(error.message || 'No se pudo guardar el proyecto. Inténtalo de nuevo.');
     } finally {
       setPending(false);
     }
@@ -92,10 +98,10 @@ export function ProjectView({ project }: { project: BoardProject }) {
       {/* Project Header (Extracted from KanbanBoard) */}
       <div className="page-heading">
         <div>
-          <span className="entity-code project-heading-code">{project.code}</span>
+          <span className="entity-code project-heading-code">{displayedProjectCode}</span>
           <div className="project-title-row">
             <h1>{displayedProjectName}</h1>
-            <button className="rename-project-button" aria-label="Editar proyecto" title="Editar proyecto" disabled={pending} onClick={() => { setProjectName(displayedProjectName); setProjectDescription(displayedProjectDescription); setRenameError(''); setIsRenaming(true); }}>
+            <button className="rename-project-button" aria-label="Editar proyecto" title="Editar proyecto" disabled={pending} onClick={() => { setProjectName(displayedProjectName); setProjectCode(displayedProjectCode); setProjectDescription(displayedProjectDescription); setRenameError(''); setIsRenaming(true); }}>
               <Pencil size={15} />
             </button>
           </div>
@@ -124,9 +130,16 @@ export function ProjectView({ project }: { project: BoardProject }) {
       <div className="flex-1 overflow-hidden">
         {activePlugins.map(plugin => {
           const PluginComponent = plugin.components.ProjectView;
+          // Optimistic update: pass the locally modified project so plugins re-render immediately
+          const optimisticProject = {
+            ...project,
+            name: displayedProjectName,
+            code: displayedProjectCode,
+            description: displayedProjectDescription
+          };
           return (
             <div key={plugin.id} style={{ display: activeTab === plugin.id ? 'block' : 'none', height: '100%' }}>
-              {PluginComponent && <PluginComponent project={project} />}
+              {PluginComponent && <PluginComponent project={optimisticProject} />}
             </div>
           );
         })}
@@ -170,10 +183,15 @@ export function ProjectView({ project }: { project: BoardProject }) {
       <Dialog open={isRenaming} onOpenChange={open => { if (!pending) setIsRenaming(open); }}>
         <DialogContent className="sm:max-w-lg">
           <form onSubmit={renameProject} className="dialog-form">
-            <DialogHeader><DialogTitle>Editar proyecto</DialogTitle><DialogDescription>El código {project.code} y los códigos de las tareas se mantienen.</DialogDescription></DialogHeader>
+            <DialogHeader><DialogTitle>Editar proyecto</DialogTitle><DialogDescription>Modificar el código de 3 letras actualizará también los identificadores de todas las tareas (ej. {displayedProjectCode}-1).</DialogDescription></DialogHeader>
             <div className="form-field">
               <label htmlFor="rename-project">Nombre del proyecto</label>
               <Input id="rename-project" autoFocus value={projectName} onChange={event => setProjectName(event.target.value)} required maxLength={120} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="edit-project-code">Código del proyecto</label>
+              <Input id="edit-project-code" name="code" placeholder="NPR" required minLength={3} maxLength={3} pattern="[A-Za-z]{3}" value={projectCode} onChange={event => setProjectCode(event.target.value.toUpperCase())} aria-describedby="edit-project-code-hint" />
+              <p id="edit-project-code-hint" className="field-hint">Tres letras únicas (A–Z).</p>
             </div>
             <div className="form-field">
               <label htmlFor="edit-project-desc">Descripción (opcional)</label>
