@@ -1,0 +1,7 @@
+.kanban-scroll { display: flex; align-items: stretch; gap: 24px; overflow-x: auto; min-height: 360px; padding: 2px 2px 25px; scrollbar-color: #3d3d45 transparent; scrollbar-width: thin; }
+.kanban-board-column { display: flex; flex: 1 0 265px; flex-direction: column; max-width: 360px; min-width: 0; }
+
+@media (max-width: 760px) {
+  .kanban-scroll { margin-right: -22px; padding-right: 22px; }
+  .kanban-board-column { flex-basis: 275px; }
+}

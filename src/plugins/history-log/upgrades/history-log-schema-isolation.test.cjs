@@ -4,13 +4,13 @@ const { existsSync, mkdtempSync, readFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join, resolve } = require('node:path');
 const { PrismaClient } = require('@prisma/client');
-const { upgrade } = require('../src/plugins/history-log/upgrades/001-decouple-project-relation.cjs');
-const { discoverUpgradeFiles } = require('../scripts/run-plugin-upgrades.cjs');
+const { upgrade } = require('./001-decouple-project-relation.cjs');
+const { discoverUpgradeFiles } = require('../../../../scripts/run-plugin-upgrades.cjs');
 
 test('core and History Log schemas do not reference each other', () => {
-  const coreSchema = readFileSync(resolve(__dirname, '../prisma/schema/core.prisma'), 'utf8');
+  const coreSchema = readFileSync(resolve(__dirname, '../../../../prisma/schema/core.prisma'), 'utf8');
   const pluginSchema = readFileSync(
-    resolve(__dirname, '../src/plugins/history-log/history-log.prisma'),
+    resolve(__dirname, '../history-log.prisma'),
     'utf8',
   );
 
@@ -19,12 +19,12 @@ test('core and History Log schemas do not reference each other', () => {
 });
 
 test('discovers History Log upgrades without hardcoded plugin names', () => {
-  const upgrades = discoverUpgradeFiles(resolve(__dirname, '../src/plugins'));
+  const upgrades = discoverUpgradeFiles(resolve(__dirname, '../../'));
   assert.equal(
     upgrades.some(filename => filename.endsWith('history-log/upgrades/001-decouple-project-relation.cjs')),
     true,
   );
-  const runnerSource = readFileSync(resolve(__dirname, '../scripts/run-plugin-upgrades.cjs'), 'utf8');
+  const runnerSource = readFileSync(resolve(__dirname, '../../../../scripts/run-plugin-upgrades.cjs'), 'utf8');
   assert.doesNotMatch(runnerSource, /history-log|EventLog/);
 });
 

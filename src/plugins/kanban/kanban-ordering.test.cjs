@@ -4,7 +4,7 @@ const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
 const ts = require('typescript');
 
-const { moveBoardTask } = loadTypescriptModule('../src/lib/kanban-ordering.ts');
+const { moveBoardTask } = loadTypescriptModule('./kanban-ordering.ts');
 
 test('reorders visible tasks while preserving the relative order of hidden tasks', () => {
   const tasks = [

@@ -1,4 +1,5 @@
 'use client';
+import "./kanban.css";
 
 import { useState, useEffect, type FormEvent } from 'react';
 import type { Status, Label, Project } from '@prisma/client';
@@ -13,7 +14,7 @@ import { TaskStatusSelector } from '@/components/task-status-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { moveBoardTask } from '@/lib/kanban-ordering';
+import { moveBoardTask } from '../kanban-ordering';
 import { matchesTaskFilters } from '@/lib/task-filtering';
 import type { TaskWithLabels } from '@/lib/task-types';
 

@@ -5,7 +5,7 @@ const { resolve } = require('node:path');
 const ts = require('typescript');
 
 const { parseHistoryLogQuery } = loadTypescriptModule(
-  '../src/plugins/history-log/api/event-query.ts',
+  './event-query.ts',
 );
 
 test('uses safe pagination defaults', () => {
