@@ -10,6 +10,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p public
 RUN node scripts/gather-plugin-schemas.mjs
 RUN npx prisma generate
 ENV Next_TELEMETRY_DISABLED=1
